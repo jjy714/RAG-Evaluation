@@ -1,18 +1,19 @@
-from MAP import map 
-from MRR import mrr
-from precision import precision, precision_at_k
-from recall import recall, recall_as_llm
+from .MRR import map 
+from .MRR import mrr
+from .precision import precision, precision_at_k
+from .recall import recall, recall_as_llm
+from .noise_sensitivity import noise_sensitivity
+from .response_relevancy import response_relevancy
+# from .accuracy 
 
 
 class RetrievalEvaluator:
 
     def __init__(
             self,
-            metrics,
             dataset,
             ):
         
-        self.metrics = metrics
         self.dataset = dataset
         
     def mrr(self):
@@ -27,4 +28,5 @@ class RetrievalEvaluator:
     def recall(self):
         return 
     
-    
+    def noise_sensitivity(self):
+        return
