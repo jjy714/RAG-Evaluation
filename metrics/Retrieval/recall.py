@@ -23,4 +23,4 @@ async def recall(retrieved_contexts, reference_contexts):
     )
 
     context_recall = NonLLMContextRecall()
-    await context_recall.single_turn_ascore(sample)
+    return await context_recall.single_turn_ascore(sample)

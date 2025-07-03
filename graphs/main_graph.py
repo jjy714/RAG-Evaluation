@@ -1,13 +1,26 @@
-from typing_extensions import TypedDict, List, Dict
+from typing_extensions import TypedDict, List, Dict, Literal
 from langgraph.graph import START, StateGraph, END
 from datasets import Dataset
 
 main_graph = []
 
-class EvaluationState(TypedDict):
-    metrics: List[Dict[str]]
+"""
+SUBGRAPH
+class RetrieverEvaluationState(TypedDict):
+    metrics: List[str]
     dataset: Dataset | List
-    evaluation_result = Dict[int|float]
+    evaluation_result = Dict
+"""
+
+
+
+class EvaluationState(TypedDict):
+    retrieve_metrics: List[str] | None
+    generate_metrics: List[str] | None
+    dataset: Dataset | List
+    evaluation_mode: str
+    retriever_evaluation_result = Dict
+    generator_evaluation_result = Dict
 
 def route_evaluations(state: EvaluationState) -> Literal["retrieval_evaluator", "generation_evaluator"]:
     """
@@ -28,21 +41,33 @@ def route_evaluations(state: EvaluationState) -> Literal["retrieval_evaluator", 
     else:
         raise ValueError(f"Invalid evaluation_mode: {mode}")
 
+def edit_graph():
+    return
+
+def router(state: EvaluationState):
+    return
+
+def evaluate_retrieval(state: EvaluationState):
+    retriever_evaluation_result=[]
+    return {"retriever_evaluation_result" : retriever_evaluation_result}
+
+def evaluate_generation(state:EvaluationState):
+    generator_evaluation_result=[] 
+    return {"generator_evaluation_result" : generator_evaluation_result}
 
 
 workflow = StateGraph(EvaluationState)
 
 # Add the nodes to the graph
-workflow.add_node("rag_pipeline", run_rag_pipeline)
 workflow.add_node("retrieval_evaluator", evaluate_retrieval)
 workflow.add_node("generation_evaluator", evaluate_generation)
 
 # Set the entry point
-workflow.set_entry_point("rag_pipeline")
+workflow.set_entry_point("router")
 
 # Add the conditional router
 workflow.add_conditional_edges(
-    "rag_pipeline",
+    "router",
     route_evaluations,
     {
         "retrieval_evaluator": "retrieval_evaluator",

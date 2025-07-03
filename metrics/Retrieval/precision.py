@@ -1,6 +1,6 @@
 
 from ragas.metrics import NonLLMContextPrecisionWithReference
-from ragas import SingleTurnSample, MultiTurnSample
+from ragas import SingleTurnSample
 
 
 

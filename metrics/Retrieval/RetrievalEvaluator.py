@@ -9,12 +9,9 @@ from .response_relevancy import response_relevancy
 
 class RetrievalEvaluator:
 
-    def __init__(
-            self,
-            dataset,
-            ):
-        
-        self.dataset = dataset
+    def __init__(self):
+        self.metrics_list = [""]
+
         
     def mrr(self):
         return mrr(retrieved_docs="", ground_truth_ids="")
