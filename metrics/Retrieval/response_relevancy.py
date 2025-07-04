@@ -12,3 +12,9 @@ async def response_relevancy():
 
     scorer = ResponseRelevancy(llm=evaluator_llm, embeddings=evaluator_embeddings)
     await scorer.single_turn_ascore(sample)
+
+
+
+
+
+    
