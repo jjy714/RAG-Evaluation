@@ -73,10 +73,10 @@ evaluator = OfflineRetrievalEvaluators(actual_docs, predicted_docs, match_method
 # Calculate evaluation metrics / 평가지표 계산 
 hit_rate = evaluator.calculate_hit_rate()
 mrr = evaluator.calculate_mrr()
-recall_at_3 = evaluator.calculate_recall_k(k=3)
-precision_at_5 = evaluator.calculate_precision_k(k=5)
-map_at_5 = evaluator.calculate_map_k(k=5)
-ndcg_at_5 = evaluator.ndcg_at_k(k=5)
+recall_at_3 = evaluator.calculate_recall(k=3)
+precision_at_5 = evaluator.calculate_precision(k=5)
+map_at_5 = evaluator.calculate_map(k=5)
+# ndcg_at_5 = evaluator.ndcg_at(k=5)
 
 # Print results / 결과 출력
 print(f"Hit Rate: {hit_rate}")
@@ -84,4 +84,4 @@ print(f"MRR: {mrr}")
 print(f"Recall@3: {recall_at_3}")
 print(f"Precision@5: {precision_at_5}")
 print(f"MAP@5: {map_at_5}")
-print(f"NDCG@5: {ndcg_at_5}")
+# print(f"NDCG@5: {ndcg_at_5}")
