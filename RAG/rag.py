@@ -130,8 +130,9 @@ graph = graph_builder.compile()
 
 
 def run():
+    pass
 # Define state for application
-    for i in range():
+
     
     # while True:
     #     try:
@@ -144,5 +145,5 @@ def run():
     #         assert(e)
 
 
-if __name__ == '__main__':
-    run()
+# if __name__ == '__main__':
+#     run()

@@ -1,4 +1,4 @@
-from Generation import GenerationEvaluator
-from Retrieval import RetrievalEvaluator
 
-__any__ = ['GenerationEvaluator', 'RetrievalEvaluator']
+from .Retrieval import RetrievalEvaluator
+
+__any__ = ['RetrievalEvaluator']
