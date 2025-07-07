@@ -87,7 +87,10 @@ def evaluator():
             temp.append(Document(metadata={}, page_content=i))
         predicted_docs.append(temp)
 
-
+    # print("ACTUAL DOCUMENT")
+    # print(actual_docs)
+    # print("PREDICTED DOCUMENT")
+    # print(predicted_docs)
     main_graph = create_main_graph()
     response = main_graph.invoke(
         {
@@ -105,6 +108,7 @@ def evaluator():
         }
     )
     print(f"Retriever Evaluation Result : {response.get("retriever_evaluation_result")}")
+    print(f"Generator Evaluation Result : {response.get("generator_evaluation_result")}")
     
 
 if __name__ == "__main__":

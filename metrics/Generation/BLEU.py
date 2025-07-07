@@ -1,8 +1,11 @@
 from ragas.metrics import BleuScore
+from ragas import SingleTurnSample
+import numpy as np
+from typing import List
 
 
 
-async def bleu(self):
+def bleu(response: List, retrieved_documents:List):
     """
     DOCUMENTATION
 
@@ -10,6 +13,11 @@ async def bleu(self):
     where 1 indicates a perfect match between the response and the reference. 
     This is a non LLM based metric.
     """
-    
     scorer = BleuScore()
-    await scorer.single_turn_ascore(sample) 
+    data_list = [SingleTurnSample(
+        response=res,
+        reference=doc
+    ) for res, doc in zip(response, retrieved_documents)]
+    result = [scorer.single_turn_ascore(i) for i in data_list]
+    result = np.mean(result)
+    return result

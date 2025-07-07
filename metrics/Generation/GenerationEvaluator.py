@@ -3,18 +3,19 @@ from BLEU import bleu
 from ROUGE import rouge
 from string_similarity import string_similarity
 from BertScore import bert_score
+from langchain_core.documents import Document
+
 
 class GenerationEvaluator:
 
     def __init__(
             self,
-            dataset, 
-            metrics
+            actual_docs: List[List[Document]], 
+            predicted_docs: List[List[Document]], 
             ):
         
-        self.dataset = dataset
-        self.metrics = metrics
-
+        self.actual_docs = actual_docs
+        self.predicted_docs = predicted_docs
 
 
     def bleu(self):

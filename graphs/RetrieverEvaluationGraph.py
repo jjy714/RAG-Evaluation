@@ -3,8 +3,10 @@ from typing import List, Dict, Union, TypedDict, Literal, Optional
 from langgraph.graph import StateGraph, END
 from langchain_core.documents import Document
 from metrics import RetrievalEvaluator
+from time import sleep
+import logging
 
-METRICS_LIST = ["mrr" "map", "f1", "ndcg", "precision", "recall" ]
+METRICS_LIST = ["mrr", "map", "f1", "ndcg", "precision", "recall" ]
 
 # --- 2. Define the State for the Graph ---
 # We add an 'evaluator' field to hold the instance and 'metrics_to_run_copy' for the router.
@@ -43,6 +45,7 @@ def instantiate_evaluator_node(state: RetrievalEvaluationState) -> dict:
         actual_docs=state["actual_documents"],
         predicted_docs=state["predicted_documents"]
     )
+    sleep(2)
     return {
         "evaluator": evaluator,
         "evaluation_results": {}, # Start with an empty result dict
@@ -54,8 +57,10 @@ def mrr_node(state: RetrievalEvaluationState) -> dict:
     evaluator = state["evaluator"]
     k = state["k"]
     mrr_score = evaluator.mrr(k=k)
-    print(mrr_score)
-    return {"mrr_score": mrr_score}
+    sleep(2)
+    return {
+        "mrr_score": mrr_score
+        }
 
 def map_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the MAP score."""
@@ -63,25 +68,29 @@ def map_node(state: RetrievalEvaluationState) -> dict:
     evaluator = state["evaluator"]
     k = state["k"]
     map_score = evaluator.map(k=k)
+    sleep(2)
     return {"map_score": map_score}
+
 def f1_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the f1 score."""
     print("--- (2c) Running f1 Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    f1_scores = evaluator.f1(k=k)
+    f1_micro, f1_macro = evaluator.f1(k=k)
+    # logging.DEBUG(f" F1 SCORE DEBUG: {f1_micro, f1_macro}")
+
     return {
-        "f1_micro": f1_scores.get("micro_f1"),
-        "f1_macro": f1_scores.get("macro_f1")
+        "f1_micro": f1_micro,
+        "f1_macro": f1_macro
     }
 
 def ndcg_node(state: RetrievalEvaluationState) -> dict:
-    """Node to calculate only the f1 score."""
+    """Node to calculate only the NDCG score."""
     print("--- (2d) Running NDCG Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
     ndcg_score = evaluator.ndcg(k=k)
-    
+    sleep(2)
     return {"ndcg_score": ndcg_score}
 
 def precision_node(state: RetrievalEvaluationState) -> dict:
@@ -89,12 +98,12 @@ def precision_node(state: RetrievalEvaluationState) -> dict:
     print("--- (2e) Running Precision Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    precision_scores = evaluator.precision(k=k)
-    print(f" PRECISION SCORE DEBUG: {precision_scores}")
-
+    precision_micro, precision_macro = evaluator.precision(k=k)
+    # logging.DEBUG(f" PRECISION SCORE DEBUG: {precision_micro, precision_macro}")
+    sleep(2)
     return {
-        "precision_micro": precision_scores.get("micro_precision"),
-        "precision_macro": precision_scores.get("macro_precision")
+        "precision_micro": precision_micro,
+        "precision_macro": precision_macro
     }
 
 def recall_node(state: RetrievalEvaluationState) -> dict:
@@ -102,11 +111,12 @@ def recall_node(state: RetrievalEvaluationState) -> dict:
     print("--- (2f) Running Recall Node ---")
     evaluator = state["evaluator"]
     k = state["k"]    
-    recall_scores = evaluator.recall(k=k)
-    print(f" RECALL SCORE DEBUG: {recall_scores}")
+    recall_micro, recall_macro = evaluator.recall(k=k)
+    # logging.DEBUG(f" RECALL SCORE DEBUG: {recall_micro, recall_macro}")
+    sleep(2)
     return {
-        "recall_micro": recall_scores.get("micro_recall"),
-        "recall_macro": recall_scores.get("macro_recall")
+        "recall_micro": recall_micro,
+        "recall_macro": recall_macro
     }
 
 def finalize_node(state: RetrievalEvaluationState) -> dict:
@@ -125,10 +135,11 @@ def finalize_node(state: RetrievalEvaluationState) -> dict:
     }
     # Remove any None entries
     final_scores = {k: v for k, v in final_scores.items() if v is not None}
+    sleep(2)
     return {"final_results": final_scores}
 
 
-def route_metrics(state: RetrievalEvaluationState) -> str:
+def parallelize_metrics(state: RetrievalEvaluationState) -> str:
     print("--- Routing Metrics ---")
     
     metric = state["metrics_to_run"]
@@ -139,7 +150,7 @@ def route_metrics(state: RetrievalEvaluationState) -> str:
     
     if metric not in METRICS_LIST:
         print("No evaluation metric selected\n Choose from the following metrics list \n{METRICS_LIST}")
-
+    sleep(2)
     return metric
 # --- 5. Build and Compile the Subgraph ---
 def create_retrieval_subgraph(metrics_to_run: List[str]):
