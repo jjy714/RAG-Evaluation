@@ -70,11 +70,16 @@ class RAGState(TypedDict):
     rerank: bool
     answer: str
 
+from datasets import load_dataset
+
+ds = load_dataset("allganize/RAG-Evaluation-Dataset-KO")
 
 # Define application steps
 def retrieve(state: RAGState):
     print(f"---------Node: Retrieve-----------")
     retrieved_docs = dense_retriver.retrieve(state["question"], k=5)
+    with open("data/RAG_retrieved_file.csv") as f:
+        f.write()
     sleep(5)
     print("Retrieval Complete")
     return {"context": retrieved_docs}
@@ -120,21 +125,23 @@ graph_builder.add_edge(START, "retrieve")
 #         "default": "generate"
 #     }
 # )
-graph_builder.add_edge("generate", END)
+graph_builder.add_edge("retrieve", END)
 graph = graph_builder.compile()
 
 
 def run():
 # Define state for application
-    while True:
-        try:
-            user_query = input("Question? : ")
-            if "quit" in user_query:
-                break
-            response = graph.invoke({"question": user_query})
-            print(f"LLM Response: {response["answer"]}")
-        except Exception as e:
-            assert(e)
+    for i in range():
+    
+    # while True:
+    #     try:
+    #         user_query = input("Question? : ")
+    #         if "quit" in user_query:
+    #             break
+    #         response = graph.invoke({"question": user_query})
+    #         print(f"LLM Response: {response["answer"]}")
+    #     except Exception as e:
+    #         assert(e)
 
 
 if __name__ == '__main__':

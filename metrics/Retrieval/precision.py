@@ -15,7 +15,7 @@ async def precision():
     await context_precision.single_turn_ascore(sample)
 
 
-def precision_at_k(self, retrieved_docs, ground_truth_ids, k) -> float:
+def precision_at_k(retrieved_docs, ground_truth_ids, k) -> float:
     """
     Calculates the Mean Precision@K for a set of queries.
 

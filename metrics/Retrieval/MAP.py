@@ -1,5 +1,5 @@
 
-
+# @deprecated
 def map(self, retrieved_docs, ground_truth_ids) -> float:
         """
         Calculates the Mean Average Precision (MAP) for a set of queries.
