@@ -87,15 +87,12 @@ async def evaluator():
             temp.append(Document(metadata={}, page_content=i))
         predicted_docs.append(temp)
 
-    # print("ACTUAL DOCUMENT")
-    # print(actual_docs)
-    # print("PREDICTED DOCUMENT")
-    # print(predicted_docs)
+
     main_graph = create_main_graph()
     response = await main_graph.ainvoke(
         {
             "retrieve_metrics": ["mrr", "map", "f1", "ndcg","precision", "recall"], #"mrr" "map", "f1", "ndcg", "precision", "recall"
-            "generate_metrics": ['bleu', 'rouge','faithfulness'],
+            "generate_metrics": ['faithfulness'], # 'bleu', 'rouge','faithfulness'
             "dataset": {
                 "Retrieval": {
                     "predicted_documents": predicted_docs,
@@ -107,7 +104,7 @@ async def evaluator():
                     "reference": dataset['target_answer'],
                     "retrieved_contexts": dataset['target_file_name'],
                     "response":dataset['alli_gpt-4-turbo_answer'],
-                    "model":"azure"
+                    "model":"not"
                     },
             },
             "evaluation_mode": "generation_only", # "retrieval_only", "generation_only", "full"
