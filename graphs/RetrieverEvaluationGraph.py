@@ -48,7 +48,6 @@ def instantiate_evaluator_node(state: RetrievalEvaluationState) -> dict:
     sleep(2)
     return {
         "evaluator": evaluator,
-        "evaluation_results": {}, # Start with an empty result dict
     }
 
 def mrr_node(state: RetrievalEvaluationState) -> dict:
@@ -187,32 +186,7 @@ def create_retrieval_subgraph(metrics_to_run: List[str]):
 
     return workflow.compile()
 
-    # workflow.add_node("instantiate_evaluator", instantiate_evaluator_node)
-    # workflow.add_node("mrr_node", mrr_node)
-    # workflow.add_node("map_node", map_node)
-    # workflow.add_node("f1_node", f1_node)
-    # workflow.add_node("ndcg_node", ndcg_node)
-    # workflow.add_node("precision_node", precision_node)
-    # workflow.add_node("recall_node", recall_node)
-    # workflow.add_node("finalize", finalize_node)
 
-    # workflow.set_entry_point("instantiate_evaluator")
-    
-    # workflow.add_edge("instantiate_evaluator", "mrr_node")
-    # workflow.add_edge("instantiate_evaluator", "precision_node")
-    # workflow.add_edge("instantiate_evaluator", "recall_node")
-    # workflow.add_edge("instantiate_evaluator", "f1_node")
-    # workflow.add_edge("instantiate_evaluator", "ndcg_node")
-    # # etc.
-
-    # # Optionally: all metric nodes -> final join step
-    # workflow.add_edge("mrr_node", "finalize")
-    # workflow.add_edge("precision_node", "finalize")
-    # workflow.add_edge("recall_node", "finalize")
-    # workflow.add_edge("f1_node", "finalize")
-    # workflow.add_edge("ndcg_node", "finalize")
-    # workflow.set_finish_point("finalize")
-    # return workflow.compile()
 
 
 

@@ -95,16 +95,22 @@ def evaluator():
     response = main_graph.invoke(
         {
             "retrieve_metrics": ["mrr", "map", "f1", "ndcg","precision", "recall"], #"mrr" "map", "f1", "ndcg", "precision", "recall"
-            "generate_metrics": [],
+            "generate_metrics": ['bleu', 'rouge','faithfulness'],
             "dataset": {
                 "Retrieval": {
                     "predicted_documents": predicted_docs,
                     "actual_documents": actual_docs,
                     "k": 5,
                 },
-                "Generation": {"k": 5},
+                "Generation": {
+                    "user_input":"",
+                    "reference": "",
+                    "retrieved_contexts": "",
+                    "response":"",
+                    "model":"azure"
+                    },
             },
-            "evaluation_mode": "retrieval_only",
+            "evaluation_mode": "generation_only", # "retrieval_only", "generation_only", "full"
         }
     )
     print(f"Retriever Evaluation Result : {response.get("retriever_evaluation_result")}")

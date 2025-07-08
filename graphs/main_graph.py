@@ -3,7 +3,7 @@ from typing_extensions import TypedDict
 from langgraph.graph import START, END, StateGraph
 from datasets import Dataset
 from .RetrieverEvaluationGraph import create_retrieval_subgraph, RetrievalEvaluationState
-
+from .GeneratorEvaluationGraph import create_generation_subgraph, GeneratorEvaluationState
 
 # --- EvaluationState Type ---
 class EvaluationState(TypedDict):
@@ -51,8 +51,21 @@ def evaluate_retrieval(state: EvaluationState) -> Dict:
 
 # --- Generation Evaluation Stub ---
 def evaluate_generation(state: EvaluationState) -> Dict:
-    # Placeholder for real logic
-    return {"generator_evaluation_result": {"bleu": 0.0, "rouge": 0.0}}
+    
+    generate_subgraph = create_generation_subgraph(state["generate_metrics"])
+
+    generation_input: GeneratorEvaluationState = {
+        "user_input": state["dataset"]["Generation"]["query"], 
+        "reference": state["dataset"]["Generation"]["reference"], 
+        "retrieved_contexts": state["dataset"]["Generation"]["retrieved_contexts"],
+        "response": state["dataset"]["Generation"]["response"],
+        "metrics_to_run": state["generate_metrics"],
+        "model": state["dataset"]["Generation"]["model"]
+    }
+    results = generate_subgraph.invoke(generation_input)
+    results = results.get('final_results')
+
+    return {"generator_evaluation_result": results}
 
 
 # --- Router Node Definition ---
