@@ -45,6 +45,7 @@ class GenerationEvaluator:
             self.model = ChatOpenAI(model="Qwen3-30B-A3B",base_url="http://localhost:8000/v1", api_key="token-123")
             print(f"EVALUATION MODEL NOT AZURE")
 
+
     async def bleu(self) -> Dict[str, float]:
         return await bleu(self.response, self.reference)
 

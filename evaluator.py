@@ -9,7 +9,7 @@ import pandas as pd
 from datasets import load_dataset
 from pathlib import Path
 import asyncio
-PATH = Path(".").resolve() / "data/results"
+PATH = Path(".").resolve() / "data"
 EXAMPLE_DATASET = PATH / "03-01_bmt_result.csv"
 
 
@@ -107,10 +107,10 @@ async def evaluator():
                     "reference": dataset['target_answer'],
                     "retrieved_contexts": "",
                     "response":dataset['alli_gpt-4-turbo_answer'],
-                    "model":"azure"
+                    "model":"not"
                     },
             },
-            "evaluation_mode": "generation_only", # "retrieval_only", "generation_only", "full"
+            "evaluation_mode": "full", # "retrieval_only", "generation_only", "full"
         }
     )
     print(f"Retriever Evaluation Result : {response.get("retriever_evaluation_result")}")

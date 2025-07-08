@@ -4,6 +4,7 @@ from typing_extensions import TypedDict, List, Dict, Optional
 from datasets import Dataset
 from metrics import GenerationEvaluator
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
+import numpy as np
 from time import sleep
 
             # user_input: List[str],
@@ -27,7 +28,7 @@ class GeneratorEvaluationState(TypedDict):
     rouge_score: Optional[float]
     bleu_score: Optional[float]
     faithfulness_score: Optional[float]
-    final_results= Dict[str, float]
+    final_results: Dict[str, float]
 
 
 def instantiate_evaluator_node(state: GeneratorEvaluationState) -> dict:
@@ -53,7 +54,6 @@ async def rouge_node(state: GeneratorEvaluationState):
     print("--- (2a) Running rouge Node ---")
     evaluator = state["evaluator"]
     rouge_score = await evaluator.rouge()
-    print(f"GRAPH ROUGE: {rouge_score}")
     sleep(2)
     return {"rouge_score": rouge_score}
 
@@ -83,8 +83,7 @@ def finalize_node(state: GeneratorEvaluationState) -> dict:
         "faithfulness": state.get("faithfulness_score"),
     }
     # Remove any None entries
-    final_scores = {k: v for k, v in final_scores.items() if v is not None}
-    print("final_scores")
+    final_scores = {k: v for k, v in final_scores.items() if v is not None or not np.isnan(v)}
     sleep(2)
     return {"final_results": final_scores}
 
