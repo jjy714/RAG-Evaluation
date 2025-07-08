@@ -105,12 +105,12 @@ async def evaluator():
                 "Generation": {
                     "query":dataset['question'],
                     "reference": dataset['target_answer'],
-                    "retrieved_contexts": "",
+                    "retrieved_contexts": dataset['target_file_name'],
                     "response":dataset['alli_gpt-4-turbo_answer'],
                     "model":"not"
                     },
             },
-            "evaluation_mode": "full", # "retrieval_only", "generation_only", "full"
+            "evaluation_mode": "generation_only", # "retrieval_only", "generation_only", "full"
         }
     )
     print(f"Retriever Evaluation Result : {response.get("retriever_evaluation_result")}")
