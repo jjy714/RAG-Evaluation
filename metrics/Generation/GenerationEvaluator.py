@@ -53,8 +53,9 @@ class GenerationEvaluator:
         return await rouge(self.response, self.reference)
 
     async def faithfulness(self) -> Dict[str, float]:
+        model = self.model
         return await faithfulness(
-            llm=self.model, 
+            llm=model, 
             user_input=self.user_input, 
             response=self.response, 
             retrieved_contexts=self.retrieved_contexts
