@@ -48,13 +48,25 @@ class OfflineRetrievalEvaluators:
             raise ValueError("입력 문서 리스트가 비어있을 수 없습니다.")
         if len(actual_docs) != len(predicted_docs):
             raise ValueError("실제 문서 리스트와 예측 문서 리스트의 길이가 같아야 합니다.")
+                # --- 수정된 부분 ---
+        # averaging_method가 문자열이면 Enum 멤버로 변환합니다.
+        if isinstance(averaging_method, str):
+            try:
+                self.averaging_method = AveragingMethod(averaging_method.lower())
+            except ValueError:
+                raise ValueError(f"'{averaging_method}'는 유효한 AveragingMethod가 아닙니다. 'micro', 'macro', 'both' 중 하나여야 합니다.")
+        else:
+            self.averaging_method = averaging_method
         
+        
+        # --- 수정 끝 ---
         self.actual_docs = actual_docs 
         self.predicted_docs = predicted_docs  
         self.match_method = match_method
         self.averaging_method = averaging_method
         self.matching_criteria = matching_criteria
         self._cache = {}
+        
 
     @lru_cache(maxsize=1000)
     def text_match(self, actual_text: str, predicted_text: Union[str, List[str]]) -> bool:
@@ -123,64 +135,35 @@ class OfflineRetrievalEvaluators:
     #     return result
 
     def calculate_precision(self, k: Optional[int] = None) -> Dict[str, float]:
-        """
-        정밀도(Precision)를 올바르게 계산합니다.
-        """
         result = {}
-        
-        # Micro-average를 위한 변수
         total_relevant_found_for_micro = 0
         total_predicted_for_micro = 0
-        
-        # Macro-average를 위한 변수
         macro_precisions_list = []
-
         for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
-            # 현재 쿼리에서 고려할 예측 문서의 수를 결정 (k와 실제 예측 수 중 작은 값)
             limit = min(k, len(predicted_docs)) if k is not None else len(predicted_docs)
-            
-            # 실제 정답 문서의 내용을 set으로 만들어 중복 확인 및 빠른 조회를 가능하게 함
             ground_truth_set = {doc.page_content for doc in actual_docs}
-            
-            # 이 쿼리에서 발견된 관련 문서 수
             relevant_count_for_this_query = 0
-            
-            # 상위 k개의 예측 문서만 확인
             for pred_doc in predicted_docs[:limit]:
-                # 예측된 문서가 아직 사용되지 않은 정답 문서 set에 있는지 확인
                 if pred_doc.page_content in ground_truth_set:
                     relevant_count_for_this_query += 1
-                    # 한 번 사용된 정답은 set에서 제거하여 중복 계산을 방지
                     ground_truth_set.remove(pred_doc.page_content)
-
-            # Micro-average를 위해 전체 합계에 더함
             total_relevant_found_for_micro += relevant_count_for_this_query
             total_predicted_for_micro += limit
-
-            # Macro-average를 위해 이 쿼리의 정밀도를 계산하여 리스트에 추가
             precision_for_this_query = relevant_count_for_this_query / limit if limit > 0 else 0
             macro_precisions_list.append(precision_for_this_query)
 
-        # --- 최종 점수 계산 ---
-        
-        # Micro-average 계산: (모든 쿼리에서 발견된 관련 문서 총합) / (모든 쿼리의 예측 문서 총합)
-        if self.averaging_method in [AveragingMethod.MICRO, AveragingMethod.BOTH]:
-            result["micro_precision"] = total_relevant_found_for_micro / total_predicted_for_micro if total_predicted_for_micro > 0 else 0.0
-        
-        # Macro-average 계산: 각 쿼리의 정밀도를 모두 더한 후 쿼리 수로 나눔
-        if self.averaging_method in [AveragingMethod.MACRO, AveragingMethod.BOTH]:
-            result["macro_precision"] = np.mean(macro_precisions_list) if macro_precisions_list else 0.0
-            
+        try: 
+            result["micro_precision"] = total_relevant_found_for_micro / total_predicted_for_micro
+            result["macro_precision"] = float(np.mean(macro_precisions_list)) if macro_precisions_list else 0.0
+        except Exception as e: 
+            print(f"Error while calculating precision: {e}")    
         return result
 
 
-
     def calculate_recall(self, k: Optional[int] = None) -> Dict[str, float]:
-        """재현율 계산"""
         result = {}
         micro_recall = 0
         macro_recalls = []
-
         for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
             relevant_count = sum(
                 1 for actual_doc in actual_docs
@@ -188,66 +171,49 @@ class OfflineRetrievalEvaluators:
             )
             micro_recall += relevant_count
             macro_recalls.append(relevant_count / len(actual_docs) if actual_docs else 0)
-
         total_actual = sum(len(actual_docs) for actual_docs in self.actual_docs)
-        
-        if self.averaging_method in [AveragingMethod.MICRO, AveragingMethod.BOTH]:
+        try:
             result["micro_recall"] = micro_recall / total_actual if total_actual > 0 else 0.0
-        
-        if self.averaging_method in [AveragingMethod.MACRO, AveragingMethod.BOTH]:
             result["macro_recall"] = sum(macro_recalls) / len(macro_recalls) if macro_recalls else 0.0
-            
+        except Exception as e:
+            print(f"Error while calculating recall: {e}")    
         return result
     
 
     def calculate_f1_score(self, k: Optional[int] = None) -> Dict[str, float]:
-        """F1 점수 계산
-        
-        Args:
-            k: 상위 k개 문서 고려
-
-        Returns:
-            F1 점수 딕셔너리 
-        """
         precision = self.calculate_precision(k)  
         recall = self.calculate_recall(k)
-
         result = {}
-        
-        if self.averaging_method in [AveragingMethod.MICRO, AveragingMethod.BOTH]:
+        try:
             micro_p = precision.get('micro_precision', 0.0)
             micro_r = recall.get('micro_recall', 0.0)
-            if micro_p + micro_r > 0:
-                result['micro_f1'] = 2 * (micro_p * micro_r) / (micro_p + micro_r)
-                
-        if self.averaging_method in [AveragingMethod.MACRO, AveragingMethod.BOTH]:
+            result['micro_f1'] = 2 * (micro_p * micro_r) / (micro_p + micro_r) if micro_p + micro_r > 0 else 0.0
+
             macro_p = precision.get('macro_precision', 0.0) 
             macro_r = recall.get('macro_recall', 0.0)
-            if macro_p + macro_r > 0:
-                result['macro_f1'] = 2 * (macro_p * macro_r) / (macro_p + macro_r)
-
+            result['macro_f1'] = 2 * (macro_p * macro_r) / (macro_p + macro_r) if macro_p + macro_r > 0 else 0.0
+        except Exception as e:
+            print("Error while calculating F1 Score: {e}")
         return result
 
     def calculate_mrr(self, k: Optional[int] = None) -> Dict[str, float]:
         """
-        평균 역순위(Mean Reciprocal Rank, MRR)를 계산합니다.
-
-        Args:
-            k (Optional[int], optional): 고려할 상위 문서 수. 기본값은 None
-
-        Returns:
-            Dict[str, float]: MRR 점수 딕셔너리
+        (수정됨) 평균 역순위(Mean Reciprocal Rank, MRR)를 올바르게 계산합니다.
         """
         reciprocal_ranks = []
         for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
-            for rank, pred_doc in enumerate(predicted_docs[:k], start=1):
-                if any(self.text_match(actual_doc.page_content, pred_doc.page_content) for actual_doc in actual_docs):
+            ground_truth_set = {doc.page_content for doc in actual_docs}
+            found = False
+            limit = k if k is not None else len(predicted_docs)
+            for rank, pred_doc in enumerate(predicted_docs[:limit], start=1):
+                if pred_doc.page_content in ground_truth_set:
                     reciprocal_ranks.append(1 / rank)
-                    break
-            else:
+                    found = True
+                    break # 첫 번째 일치 항목을 찾으면 중단
+            if not found:
                 reciprocal_ranks.append(0)
         
-        mrr = sum(reciprocal_ranks) / len(reciprocal_ranks) if reciprocal_ranks else 0.0
+        mrr = np.mean(reciprocal_ranks) if reciprocal_ranks else 0.0
         return {"mrr": mrr}
 
     # def old_calculate_map(self, k: Optional[int] = None) -> Dict[str, float]:

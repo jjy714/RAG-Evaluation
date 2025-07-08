@@ -3,9 +3,12 @@ from ragas import SingleTurnSample
 import numpy as np
 from typing import List
 
+from ragas.dataset_schema import SingleTurnSample 
+from typing import List, Dict
+import numpy as np
 
 
-def bleu(response: List, retrieved_documents:List):
+async def bleu(response: List, reference:List) -> Dict[str, float]:
     """
     DOCUMENTATION
 
@@ -17,7 +20,9 @@ def bleu(response: List, retrieved_documents:List):
     data_list = [SingleTurnSample(
         response=res,
         reference=doc
-    ) for res, doc in zip(response, retrieved_documents)]
-    result = [scorer.single_turn_ascore(i) for i in data_list]
+    ) for res, doc in zip(response, reference)]
+
+    for i in data_list:
+        result = await scorer.single_turn_ascore(i)
     result = np.mean(result)
-    return result
+    return {"BLEU": result}

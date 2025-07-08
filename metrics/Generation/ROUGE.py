@@ -1,16 +1,15 @@
 from ragas.metrics import RougeScore
 from ragas import SingleTurnSample
-from typing import List 
+from typing import List, Dict
 import numpy as np
 
 
 async def rouge(
-        self, 
         response: List,
-        retrieved_documents: List,
-        rouge_type: str = "rouge1", 
-        mode: str = "recall",
-        ):
+        reference: List,
+        rouge_type: str | None = "rouge1", 
+        mode: str | None = "recall",
+        )-> Dict[str, float]:
     """
     DOCUMENTATION
     
@@ -22,12 +21,13 @@ async def rouge(
     
     """
     scorer = RougeScore(rouge_type=rouge_type)
-    scorer2 = RougeScore(mode=mode)
 
     data_list = [SingleTurnSample(
         response=res,
         reference=doc
-    ) for res, doc in zip(response, retrieved_documents)]
-    result = [scorer.single_turn_ascore(i) for i in data_list]
+    ) for res, doc in zip(response, reference)]
+
+    for i in data_list:
+        result = await scorer.single_turn_ascore(i)
     result = np.mean(result)
-    await result
+    return {"ROUGE": result}
