@@ -19,18 +19,17 @@ class EvaluationState(TypedDict):
 def route_evaluations(state: EvaluationState) -> Literal["retrieval_evaluator", "generation_evaluator"]:
     print("--- (*) Routing Evaluation Mode ---")
     mode = state["evaluation_mode"]
-    if not finished_retrieval:
-        if "retrieval_only" in mode:
-            print("→ Route to Retrieval Evaluator ONLY")
-            return "retrieval_evaluator"
-        elif "generation_only" in mode:
-            print("→ Route to Generation Evaluator ONLY")
-            return "generation_evaluator"
-        elif "full" in mode:
-            print("→ Route to Retrieval THEN Generation")
-            return "full"
-        else:
-            raise ValueError(f"Invalid evaluation_mode: {mode}")
+    if "retrieval_only" in mode:
+        print("→ Route to Retrieval Evaluator ONLY")
+        return "retrieval_evaluator"
+    elif "generation_only" in mode:
+        print("→ Route to Generation Evaluator ONLY")
+        return "generation_evaluator"
+    elif "full" in mode:
+        print("→ Route to Retrieval THEN Generation")
+        return "full"
+    else:
+        raise ValueError(f"Invalid evaluation_mode: {mode}")
 
 
 # --- Retrieval Evaluation Wrapper ---
