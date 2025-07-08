@@ -4,6 +4,7 @@ from langgraph.graph import START, END, StateGraph
 from datasets import Dataset
 from .RetrieverEvaluationGraph import create_retrieval_subgraph, RetrievalEvaluationState
 from .GeneratorEvaluationGraph import create_generation_subgraph, GeneratorEvaluationState
+import asyncio
 
 # --- EvaluationState Type ---
 class EvaluationState(TypedDict):
@@ -14,27 +15,26 @@ class EvaluationState(TypedDict):
     retriever_evaluation_result: Optional[Dict]
     generator_evaluation_result: Optional[Dict]
 
-
 # --- Router Function ---
 def route_evaluations(state: EvaluationState) -> Literal["retrieval_evaluator", "generation_evaluator"]:
     print("--- (*) Routing Evaluation Mode ---")
     mode = state["evaluation_mode"]
-
-    if "retrieval_only" in mode:
-        print("→ Route to Retrieval Evaluator ONLY")
-        return "retrieval_evaluator"
-    elif "generation_only" in mode:
-        print("→ Route to Generation Evaluator ONLY")
-        return "generation_evaluator"
-    elif "full" in mode:
-        print("→ Route to Retrieval THEN Generation")
-        return "retrieval_evaluator"
-    else:
-        raise ValueError(f"Invalid evaluation_mode: {mode}")
+    if not finished_retrieval:
+        if "retrieval_only" in mode:
+            print("→ Route to Retrieval Evaluator ONLY")
+            return "retrieval_evaluator"
+        elif "generation_only" in mode:
+            print("→ Route to Generation Evaluator ONLY")
+            return "generation_evaluator"
+        elif "full" in mode:
+            print("→ Route to Retrieval THEN Generation")
+            return "full"
+        else:
+            raise ValueError(f"Invalid evaluation_mode: {mode}")
 
 
 # --- Retrieval Evaluation Wrapper ---
-def evaluate_retrieval(state: EvaluationState) -> Dict:
+async def evaluate_retrieval(state: EvaluationState) -> Dict:
     retrieve_subgraph = create_retrieval_subgraph(state["retrieve_metrics"])
 
     retrieval_input: RetrievalEvaluationState = {
@@ -44,13 +44,13 @@ def evaluate_retrieval(state: EvaluationState) -> Dict:
         "k": state["dataset"]["Retrieval"]["k"],
     }
 
-    results = retrieve_subgraph.invoke(retrieval_input)
+    results = await retrieve_subgraph.ainvoke(retrieval_input)
     results = results.get('final_results')
     return {"retriever_evaluation_result": results}
 
 
 # --- Generation Evaluation Stub ---
-def evaluate_generation(state: EvaluationState) -> Dict:
+async def evaluate_generation(state: EvaluationState) -> Dict:
     
     generate_subgraph = create_generation_subgraph(state["generate_metrics"])
 
@@ -62,7 +62,7 @@ def evaluate_generation(state: EvaluationState) -> Dict:
         "metrics_to_run": state["generate_metrics"],
         "model": state["dataset"]["Generation"]["model"]
     }
-    results = generate_subgraph.invoke(generation_input)
+    results = await generate_subgraph.ainvoke(generation_input)
     results = results.get('final_results')
 
     return {"generator_evaluation_result": results}
@@ -84,7 +84,13 @@ def create_main_graph():
 
     # Entry point
     workflow.set_entry_point("router")
-
+    # workflow.set_conditional_entry_point(
+    #     route_evaluations,
+    #     {
+    #         "retrieval_evaluator": "retrieval_evaluator",
+    #         "generation_evaluator": "generation_evaluator",
+    #     }
+    # )
     # Routing logic
     workflow.add_conditional_edges(
         "router",
@@ -92,14 +98,20 @@ def create_main_graph():
         {
             "retrieval_evaluator": "retrieval_evaluator",
             "generation_evaluator": "generation_evaluator",
+            "full": "retrieval_evaluator",
         },
     )
-
-    # Sequential path for "full" evaluation
-    workflow.add_edge("retrieval_evaluator", "generation_evaluator")
-
+    workflow.add_conditional_edges(
+        "retrieval_evaluator",
+        route_evaluations,
+        {
+            "retrieval_evaluator": END,
+            "full" : "generation_evaluator",
+            "generation_evaluator" : "generation_evaluator"
+        },
+    )
     # Endpoints
     workflow.add_edge("generation_evaluator", END)
-    workflow.add_edge("retrieval_evaluator", END)  # For "retrieval_only"
+
 
     return workflow.compile()

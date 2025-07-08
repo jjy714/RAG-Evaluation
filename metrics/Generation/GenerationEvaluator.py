@@ -2,8 +2,8 @@ from typing import Dict, List
 from .BLEU import bleu
 from .ROUGE import rouge
 from .faithfulness import faithfulness
-from string_similarity import string_similarity
-from BertScore import bert_score
+# from string_similarity import string_similarity
+# from BertScore import bert_score
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
 from pathlib import Path
@@ -44,14 +44,14 @@ class GenerationEvaluator:
             self.model = ChatOpenAI(model="Qwen3-30B-A3B",base_url="http://localhost:8000/v1", api_key="token-123")
 
 
-    def bleu(self) -> Dict[str, float]:
-        return bleu(self.response, self.reference)
+    async def bleu(self) -> Dict[str, float]:
+        return await bleu(self.response, self.reference)
 
-    def rouge(self) -> Dict[str, float]:
-        return rouge(self.response, self.reference)
+    async def rouge(self) -> Dict[str, float]:
+        return await rouge(self.response, self.reference)
 
-    def faithfulness(self) -> Dict[str, float]:
-        return faithfulness(
+    async def faithfulness(self) -> Dict[str, float]:
+        return await faithfulness(
             llm=self.model, 
             user_input=self.user_input, 
             response=self.response, 

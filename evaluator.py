@@ -8,7 +8,7 @@ from langchain_core.documents import Document
 import pandas as pd
 from datasets import load_dataset
 from pathlib import Path
-
+import asyncio
 PATH = Path(".").resolve() / "data/results"
 EXAMPLE_DATASET = PATH / "03-01_bmt_result.csv"
 
@@ -23,7 +23,7 @@ EXAMPLE_DATASET = PATH / "03-01_bmt_result.csv"
 # args = parser.parse_args()
 
 
-def evaluator():
+async def evaluator():
     """
     MAIN GRAPH:
         class EvaluationState(TypedDict):
@@ -92,7 +92,7 @@ def evaluator():
     # print("PREDICTED DOCUMENT")
     # print(predicted_docs)
     main_graph = create_main_graph()
-    response = main_graph.invoke(
+    response = await main_graph.ainvoke(
         {
             "retrieve_metrics": ["mrr", "map", "f1", "ndcg","precision", "recall"], #"mrr" "map", "f1", "ndcg", "precision", "recall"
             "generate_metrics": ['bleu', 'rouge','faithfulness'],
@@ -103,14 +103,14 @@ def evaluator():
                     "k": 5,
                 },
                 "Generation": {
-                    "user_input":"",
+                    "query":"",
                     "reference": "",
                     "retrieved_contexts": "",
                     "response":"",
                     "model":"azure"
                     },
             },
-            "evaluation_mode": "generation_only", # "retrieval_only", "generation_only", "full"
+            "evaluation_mode": "full", # "retrieval_only", "generation_only", "full"
         }
     )
     print(f"Retriever Evaluation Result : {response.get("retriever_evaluation_result")}")
@@ -118,4 +118,4 @@ def evaluator():
     
 
 if __name__ == "__main__":
-    evaluator()
+    asyncio.run(evaluator())

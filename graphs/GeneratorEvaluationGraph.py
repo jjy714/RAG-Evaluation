@@ -2,7 +2,7 @@
 from langgraph.graph import StateGraph
 from typing_extensions import TypedDict, List, Dict, Optional
 from datasets import Dataset
-from ..metrics import GenerationEvaluator
+from metrics import GenerationEvaluator
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
 from time import sleep
 
@@ -48,28 +48,28 @@ def instantiate_evaluator_node(state: GeneratorEvaluationState) -> dict:
         "evaluator": evaluator,
     }
 
-def rouge_node(state: GeneratorEvaluationState):
+async def rouge_node(state: GeneratorEvaluationState):
     """Node to calculate only the ROUGE score."""
     print("--- (2a) Running rouge Node ---")
     evaluator = state["evaluator"]
-    rouge_score = evaluator.rouge()
+    rouge_score = await evaluator.rouge()
     sleep(2)
     return {"rouge_score": rouge_score}
 
-def bleu_node(state: GeneratorEvaluationState):
+async def bleu_node(state: GeneratorEvaluationState):
     """Node to calculate only the BLEU score."""
     print("--- (2b) Running BLEU Node ---")
     evaluator = state["evaluator"]
-    bleu_score = evaluator.bleu()
+    bleu_score = await evaluator.bleu()
     sleep(2)
     return {"bleu_score": bleu_score}
 
 
-def faithfulness_node(state: GeneratorEvaluationState):
+async def faithfulness_node(state: GeneratorEvaluationState):
     """Node to calculate only the Faithfulness score."""
     print("--- (2c) Running Faithfulness Node ---")
     evaluator = state["evaluator"]
-    faithfulness_score = evaluator.faithfulness()
+    faithfulness_score = await evaluator.faithfulness()
     sleep(2)
     return {"faithfulness_score": faithfulness_score}
 
