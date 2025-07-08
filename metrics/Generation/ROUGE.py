@@ -1,6 +1,8 @@
 from ragas.metrics import RougeScore
 from ragas import SingleTurnSample
 from typing import List, Dict
+from tqdm.asyncio import tqdm
+
 import numpy as np
 
 
@@ -27,7 +29,7 @@ async def rouge(
         reference=doc
     ) for res, doc in zip(response, reference)]
 
-    for i in data_list:
+    for i in tqdm(data_list):
         temp = await scorer.single_turn_ascore(i)
         results.append(temp)
     if not results:

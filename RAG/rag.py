@@ -70,6 +70,8 @@ class RAGState(TypedDict):
     rerank: bool
     answer: str
 
+    output: List
+
 from datasets import load_dataset
 
 ds = load_dataset("allganize/RAG-Evaluation-Dataset-KO")

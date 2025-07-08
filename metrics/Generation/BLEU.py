@@ -2,7 +2,7 @@ from ragas.metrics import BleuScore
 from ragas import SingleTurnSample
 import numpy as np
 from typing import List
-
+from tqdm.asyncio import tqdm
 from ragas.dataset_schema import SingleTurnSample 
 from typing import List, Dict
 import numpy as np
@@ -23,7 +23,7 @@ async def bleu(response: List, reference:List) -> Dict[str, float]:
         reference=doc
     ) for res, doc in zip(response, reference)]
 
-    for i in data_list:
+    for i in tqdm(data_list):
         temp = await scorer.single_turn_ascore(i)
         results.append(temp)
     
