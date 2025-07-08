@@ -54,7 +54,7 @@ class GenerationEvaluator:
 
     async def faithfulness(self) -> Dict[str, float]:
         model = self.model
-        print(f"[GENERATION EVALUATOR CLASS] self.retrieved_contexts : {self.retrieved_contexts}")
+        # print(f"[GENERATION EVALUATOR CLASS] self.retrieved_contexts : {self.retrieved_contexts}")
         return await faithfulness(
             llm=model, 
             user_input=self.user_input, 

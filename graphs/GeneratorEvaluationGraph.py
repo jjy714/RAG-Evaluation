@@ -83,7 +83,7 @@ def finalize_node(state: GeneratorEvaluationState) -> dict:
         "faithfulness": state.get("faithfulness_score"),
     }
     # Remove any None entries
-    final_scores = {k: v for k, v in final_scores.items() if v is not None or not np.isnan(v)}
+    final_scores = {k: v for k, v in final_scores.items() if v is not None}
     sleep(2)
     return {"final_results": final_scores}
 
