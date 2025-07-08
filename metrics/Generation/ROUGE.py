@@ -33,7 +33,7 @@ async def rouge(
     if not results:
         result = 0.0
     result = np.mean(results)
-    print(f"ROUGE MODULE {result}")
+    # print(f"ROUGE MODULE {result}")
     
 
     return result

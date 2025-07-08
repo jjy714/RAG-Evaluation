@@ -63,7 +63,6 @@ async def evaluate_generation(state: EvaluationState) -> Dict:
     }
     results = await generate_subgraph.ainvoke(generation_input)
     results = results.get('final_results')
-
     return {"generator_evaluation_result": results}
 
 

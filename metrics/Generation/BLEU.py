@@ -32,5 +32,5 @@ async def bleu(response: List, reference:List) -> Dict[str, float]:
     if not results:
         result = 0.0
     result = np.mean(results)
-    print(f"BLEU MODULE {result}")
+    # print(f"BLEU MODULE {result}")
     return result
