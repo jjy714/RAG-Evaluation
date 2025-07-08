@@ -107,7 +107,7 @@ async def evaluator():
                     "reference": dataset['target_answer'],
                     "retrieved_contexts": dataset['target_file_name'],
                     "response":dataset['alli_gpt-4-turbo_answer'],
-                    "model":"not"
+                    "model":"azure"
                     },
             },
             "evaluation_mode": "generation_only", # "retrieval_only", "generation_only", "full"

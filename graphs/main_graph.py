@@ -52,7 +52,7 @@ async def evaluate_retrieval(state: EvaluationState) -> Dict:
 async def evaluate_generation(state: EvaluationState) -> Dict:
     
     generate_subgraph = create_generation_subgraph(state["generate_metrics"])
-
+    print(f"[MAIN GRAPH] state['dataset']['Generation']['retrieved_contexts'] : {state['dataset']['Generation']['retrieved_contexts']}")
     generation_input: GeneratorEvaluationState = {
         "user_input": state["dataset"]["Generation"]["query"], 
         "reference": state["dataset"]["Generation"]["reference"], 
