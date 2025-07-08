@@ -21,13 +21,19 @@ async def rouge(
     
     """
     scorer = RougeScore(rouge_type=rouge_type)
-
+    results = []
     data_list = [SingleTurnSample(
         response=res,
         reference=doc
     ) for res, doc in zip(response, reference)]
 
     for i in data_list:
-        result = await scorer.single_turn_ascore(i)
-    result = np.mean(result)
-    return {"ROUGE": result}
+        temp = await scorer.single_turn_ascore(i)
+        results.append(temp)
+    if not results:
+        result = 0.0
+    result = np.mean(results)
+    print(f"ROUGE MODULE {result}")
+    
+
+    return result

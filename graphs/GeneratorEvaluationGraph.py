@@ -53,6 +53,7 @@ async def rouge_node(state: GeneratorEvaluationState):
     print("--- (2a) Running rouge Node ---")
     evaluator = state["evaluator"]
     rouge_score = await evaluator.rouge()
+    print(f"GRAPH ROUGE: {rouge_score}")
     sleep(2)
     return {"rouge_score": rouge_score}
 
@@ -83,6 +84,7 @@ def finalize_node(state: GeneratorEvaluationState) -> dict:
     }
     # Remove any None entries
     final_scores = {k: v for k, v in final_scores.items() if v is not None}
+    print("final_scores")
     sleep(2)
     return {"final_results": final_scores}
 

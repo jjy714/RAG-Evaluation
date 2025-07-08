@@ -55,7 +55,7 @@ async def evaluator():
     """
 
     # dataset = load_dataset(args.dataset)
-    # dataset = load_dataset(EXAMPLE_DATASET)
+    dataset = load_dataset("allganize/RAG-Evaluation-Dataset-KO", split="test[:100]")
     # metrics = args.metrics.split(",")
     # selected_metrices=args.mode.split(",")
     df = pd.read_csv(EXAMPLE_DATASET)
@@ -103,14 +103,14 @@ async def evaluator():
                     "k": 5,
                 },
                 "Generation": {
-                    "query":"",
-                    "reference": "",
+                    "query":dataset['question'],
+                    "reference": dataset['target_answer'],
                     "retrieved_contexts": "",
-                    "response":"",
+                    "response":dataset['alli_gpt-4-turbo_answer'],
                     "model":"azure"
                     },
             },
-            "evaluation_mode": "full", # "retrieval_only", "generation_only", "full"
+            "evaluation_mode": "generation_only", # "retrieval_only", "generation_only", "full"
         }
     )
     print(f"Retriever Evaluation Result : {response.get("retriever_evaluation_result")}")

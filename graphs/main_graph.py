@@ -83,13 +83,6 @@ def create_main_graph():
 
     # Entry point
     workflow.set_entry_point("router")
-    # workflow.set_conditional_entry_point(
-    #     route_evaluations,
-    #     {
-    #         "retrieval_evaluator": "retrieval_evaluator",
-    #         "generation_evaluator": "generation_evaluator",
-    #     }
-    # )
     # Routing logic
     workflow.add_conditional_edges(
         "router",
@@ -106,7 +99,6 @@ def create_main_graph():
         {
             "retrieval_evaluator": END,
             "full" : "generation_evaluator",
-            "generation_evaluator" : "generation_evaluator"
         },
     )
     # Endpoints

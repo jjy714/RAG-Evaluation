@@ -13,11 +13,19 @@ async def faithfulness(llm: ChatOpenAI | AzureChatOpenAI, user_input: List, resp
     scorer = Faithfulness(llm=evaluator_llm)
     
     data_list = []
+    results=[]
     for user_input, response, retrieved_contexts in zip(user_input, response, retrieved_contexts):
         data_list.append(
             SingleTurnSample(user_input=user_input, response=response, retrieved_contexts=retrieved_contexts)
             )
+
     for i in data_list:
-        result = await scorer.single_turn_ascore(i)
-    result = np.mean(result)
-    return {"faithfulness": result}
+        temp = await scorer.single_turn_ascore(i)
+        results.append(temp)
+
+    print(f"FAITHFULNESS MODULE {results}")
+    if not results:
+        result = 0.0
+
+    result = np.mean(results)
+    return result
