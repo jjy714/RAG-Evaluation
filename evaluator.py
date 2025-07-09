@@ -56,7 +56,7 @@ async def evaluator():
                     "model":"azure"
                     },
             },
-            "evaluation_mode": "retrieval_only", # "retrieval_only", "generation_only", "full"
+            "evaluation_mode": "generation_only", # "retrieval_only", "generation_only", "full"
         }
     )
     print(f"Retriever Evaluation Result : {json.dumps(response.get("retriever_evaluation_result"))}")
