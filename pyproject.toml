@@ -1,7 +1,7 @@
 [project]
 name = "rag-evaluation"
 version = "0.1.0"
-author = "Jason Junyoung Jung"
+authors = { name = "Jason Junyoung Jung", email = "jjy714@gmail.com"}
 description = "RAG Evaluation System"
 readme = "README.md"
 requires-python = "==3.12.9"
