@@ -67,3 +67,6 @@ class GenerationEvaluator:
 
     def bert_score(self):
         pass
+
+    def g_eval(self):
+        pass
