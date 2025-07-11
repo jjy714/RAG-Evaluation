@@ -3,7 +3,7 @@ from langchain_core.documents import Document
 from langgraph.graph import START, StateGraph, state
 from langchain_huggingface import HuggingFaceEmbeddings
 
-from embedding import DenseEmbedding, SparseEmbedding
+from RAG.utils.embedding import DenseEmbedding, SparseEmbedding
 from qdrant_client import QdrantClient, models
 
 import pandas as pd
@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional, List
 from datetime import datetime
 from dotenv import load_dotenv
-from CONSTANTS import HOST, PORT, COLLECTION_NAME, DENSE_MODEL,DENSE_VECTOR
+from RAG.utils.CONSTANTS import HOST, PORT, COLLECTION_NAME, DENSE_MODEL,DENSE_VECTOR
 import uuid
 load_dotenv() #환경변수 로드
 

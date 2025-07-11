@@ -3,7 +3,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 from qdrant_client import QdrantClient, models
 from qdrant_client.http.models import Distance, SparseVectorParams, VectorParams
-from CONSTANTS import HOST, PORT, COLLECTION_NAME, DENSE_VECTOR, DENSE_MODEL, SPARSE_VECTOR
+from RAG.utils.CONSTANTS import HOST, PORT, COLLECTION_NAME, DENSE_VECTOR, DENSE_MODEL, SPARSE_VECTOR
 from pathlib import Path
 from datetime import datetime
 import pandas as pd

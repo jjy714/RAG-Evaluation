@@ -8,7 +8,7 @@ from qdrant_client.models import PointStruct
 from langchain_core.documents import Document
 from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
 from langchain_huggingface import HuggingFaceEmbeddings
-from embedding import DenseEmbedding, LateInteractionEmbedding, SparseEmbedding
+from RAG.utils.embedding import DenseEmbedding, LateInteractionEmbedding, SparseEmbedding
 
 dense_model = DenseEmbedding()
 sparse_model = SparseEmbedding()

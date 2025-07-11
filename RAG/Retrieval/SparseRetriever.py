@@ -4,12 +4,12 @@ from langchain_qdrant import QdrantVectorStore, RetrievalMode, FastEmbedSparse
 from langchain_core.documents import Document
 from langgraph.graph import START, StateGraph, state
 from langchain_huggingface import HuggingFaceEmbeddings
-from retriever import Retriever
+from RAG.Retrieval.retriever import Retriever
 from qdrant_client import QdrantClient
 from typing import Optional, List
 import uuid
 
-from CONSTANTS import SPARSE_VECTOR
+from RAG.utils.CONSTANTS import SPARSE_VECTOR
 
 class SparseRetriever(Retriever):
     def __init__(            

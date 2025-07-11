@@ -5,11 +5,12 @@ from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
 from langgraph.graph import START, StateGraph, END
 from typing_extensions import List, TypedDict
-from DenseRetriever import DenseRetriever
-from SparseRetriever import SparseRetriever
+from RAG.Retrieval.DenseRetriever import DenseRetriever
+from RAG.Retrieval.SparseRetriever import SparseRetriever
+from Generation import Generator
 import os
 from time import sleep
-from CONSTANTS import (
+from RAG.utils.CONSTANTS import (
     HOST, 
     PORT, 
     COLLECTION_NAME, 
@@ -57,11 +58,7 @@ AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_API_VERSION=os.getenv("AZURE_API_VERSION")
 
-llm = AzureChatOpenAI(
-    azure_deployment=AZURE_DEPLOYMENT_NAME,  # or your deployment
-    api_version=AZURE_API_VERSION,  # or your api version
-    temperature=0,
-    )
+
 
 class RAGState(TypedDict):
     iteration: int
@@ -117,22 +114,28 @@ def generate(state: RAGState):
 
 
 # Compile application and test
-graph_builder = StateGraph(RAGState).add_sequence([retrieve, generate])
-graph_builder.add_edge(START, "retrieve")
-# graph_builder.add_conditional_edges(
-#     "source_node",
-#     "do_rerank",
-#     {
-#         "condition1": "rerank",
-#         "default": "generate"
-#     }
-# )
-graph_builder.add_edge("retrieve", END)
-graph = graph_builder.compile()
+def create_rag_graph():
+    graph_builder = StateGraph(RAGState).add_sequence([retrieve, generate])
+    graph_builder.add_edge(START, "retrieve")
+    # graph_builder.add_conditional_edges(
+    #     "source_node",
+    #     "do_rerank",
+    #     {
+    #         "ndition1": "rerank",
+    #         "default": "generate"
+    #     }
+    # )
+    graph_builder.add_edge("retrieve", END)
+    return graph_builder.compile()
 
 
-def run():
-    pass
+async def run():
+    graph = create_rag_graph()
+    response = await graph.ainvoke()
+
+
+
+
 # Define state for application
 
     
