@@ -4,6 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from datasets import load_dataset, Dataset
 from graphs import create_main_graph
+from typing import Dict
 from langchain_core.documents import Document
 import pandas as pd
 from datasets import load_dataset
@@ -28,13 +29,17 @@ EXAMPLE_DATASET = PATH / "response_merged_output.csv"
 # args = parser.parse_args()
 
 
-async def evaluator():
+async def evaluator(payload: Dict):
     
     # dataset = load_dataset(args.dataset)
     # dataset = load_dataset("allganize/RAG-Evaluation-Dataset-KO", split="test[:10]")
     # metrics = args.metrics.split(",")
     # selected_metrices=args.mode.split(",")
-    
+    data = payload.get("dataset")
+    retrieval_data = data.get("Retrieval")
+    generation_data = data.get("Generation")
+    config = payload.get("config")
+
     predicted_docs, actual_docs = dataprocess_retrieve(EXAMPLE_DATASET)
     query, reference, retrieved_contexts, _response = dataprocess_generate(EXAMPLE_DATASET)
     main_graph = create_main_graph()
@@ -59,9 +64,9 @@ async def evaluator():
             "evaluation_mode": "generation_only", # "retrieval_only", "generation_only", "full"
         }
     )
-    print(f"Retriever Evaluation Result : {json.dumps(response.get("retriever_evaluation_result"))}")
-    print(f"Generator Evaluation Result : {response.get("generator_evaluation_result")}")
-    
+    retrieval_evaluation_result = response.get("retriever_evaluation_result")
+    generator_evaluation_result = response.get("generator_evaluation_result")
+    return retrieval_evaluation_result, generator_evaluation_result    
 
 if __name__ == "__main__":
     asyncio.run(evaluator())
