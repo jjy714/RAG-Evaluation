@@ -45,6 +45,8 @@ class EvaluationDataset(BaseModel):
 
 # The main request body for the /evaluate endpoint
 class EvaluationRequest(BaseModel):
+    user_id: int
+    session_id: int
     evaluation_mode: Literal["retrieval_only", "generation_only", "full"]
     retrieve_metrics: Optional[List[str]] = None
     generate_metrics: Optional[List[str]] = None
