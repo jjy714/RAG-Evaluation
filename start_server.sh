@@ -1,6 +1,6 @@
 
 
-uv run uvicorn app:app --reload
+# uv run uvicorn app:app --reload
 
 
 # Run Evaluator Systems 
