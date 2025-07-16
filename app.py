@@ -2,7 +2,8 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
 from fastapi import File, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import List, Dict, Literal, Optional
+from schema import EvaluationRequest, EvaluationStartResponse, EvaluationStatusResponse
+from evaluator import evaluator
 import uuid
 import asyncio
 import json
@@ -19,49 +20,6 @@ app = FastAPI(
 # --- In-memory storage for evaluation status and results ---
 evaluations = {}
 
-# --- Pydantic Models for API Data Structure ---
-
-# Define the structure for the data needed for retrieval evaluation
-class RetrievalData(BaseModel):
-    predicted_documents: List[List[str]]
-    actual_documents: List[List[str]]
-    k: int
-
-
-# Define the structure for the data needed for generation evaluation
-class GenerationData(BaseModel):
-    query: List[str]
-    reference: List[str]
-    retrieved_contexts: List[List[str]]
-    response: List[str]
-    model: str
-
-
-# Combine the data structures into a single dataset model
-class EvaluationDataset(BaseModel):
-    Retrieval: Optional[RetrievalData] = None
-    Generation: Optional[GenerationData] = None
-
-
-# The main request body for the /evaluate endpoint
-class EvaluationRequest(BaseModel):
-    user_id: int
-    session_id: int
-    evaluation_mode: Literal["retrieval_only", "generation_only", "full"]
-    retrieve_metrics: Optional[List[str]] = None
-    generate_metrics: Optional[List[str]] = None
-    dataset: EvaluationDataset
-
-
-# The response model for starting an evaluation
-class EvaluationStartResponse(BaseModel):
-    evaluation_id: str
-
-# The response model for checking evaluation status
-class EvaluationStatusResponse(BaseModel):
-    status: str
-    result: Optional[Dict] = None
-
 # --- Background Task for Evaluation ---
 
 async def run_evaluation(evaluation_id: str, request: EvaluationRequest):
@@ -70,7 +28,7 @@ async def run_evaluation(evaluation_id: str, request: EvaluationRequest):
     """
     evaluations[evaluation_id]["status"] = "running"
     print(f"--- Starting Evaluation {evaluation_id} ---")
-
+    result = dict()
     try:
         # Create the main evaluation graph
         main_graph = create_main_graph()
@@ -88,15 +46,9 @@ async def run_evaluation(evaluation_id: str, request: EvaluationRequest):
         print(f"Invoking graph with mode: {request.evaluation_mode}")
         
         # Asynchronously invoke the graph with the state
-        final_state = await main_graph.ainvoke(initial_state)
-        
+        result["retriever_evaluation_result"], result["generator_evaluation_result"] = await evaluator(initial_state)
         print(f"--- Graph Execution Finished for {evaluation_id} ---")
 
-        # Extract the relevant results from the final state
-        result = {
-            "retriever_evaluation": final_state.get("retriever_evaluation_result"),
-            "generator_evaluation": final_state.get("generator_evaluation_result"),
-        }
 
         evaluations[evaluation_id]["status"] = "completed"
         evaluations[evaluation_id]["result"] = result
@@ -107,6 +59,20 @@ async def run_evaluation(evaluation_id: str, request: EvaluationRequest):
         evaluations[evaluation_id]["status"] = "failed"
         evaluations[evaluation_id]["result"] = {"error": str(e)}
 
+# @TODO
+"""
+1. Create Logging sequence
+Log as a file and store in User's -> session -> table in DB
+
+2. Make the graph interaction individual to interact with the frontend. 
+
+
+"""
+
+
+
+
+
 
 # --- API Endpoints ---
 
@@ -114,7 +80,7 @@ async def run_evaluation(evaluation_id: str, request: EvaluationRequest):
 def read_root():
     return {"status": "ok"}
 
-@app.post("/evaluations", response_model=EvaluationStartResponse, status_code=202)
+@app.post("/evaluate", response_model=EvaluationStartResponse, status_code=202)
 async def start_evaluation(request: EvaluationRequest, background_tasks: BackgroundTasks):
     """
     Starts a new evaluation as a background task.
@@ -124,7 +90,7 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
     background_tasks.add_task(run_evaluation, evaluation_id, request)
     return {"evaluation_id": evaluation_id}
 
-@app.get("/evaluations/{evaluation_id}", response_model=EvaluationStatusResponse)
+@app.get("/evaluate/{evaluation_id}", response_model=EvaluationStatusResponse)
 def get_evaluation_status(evaluation_id: str):
     """
     Checks the status and results of an evaluation.
@@ -133,6 +99,8 @@ def get_evaluation_status(evaluation_id: str):
     if not evaluation:
         raise HTTPException(status_code=404, detail="Evaluation not found")
     return evaluation
+
+
 
 @app.get("/system/info")
 def get_system_info():

@@ -9,8 +9,9 @@ from langchain_core.documents import Document
 import pandas as pd
 from datasets import load_dataset
 from pathlib import Path
+from pydantic import BaseModel
 from utils import dataprocess_retrieve, dataprocess_generate
-import json
+from schema import EvaluationSchema
 import asyncio
 
 
@@ -29,12 +30,8 @@ EXAMPLE_DATASET = PATH / "response_merged_output.csv"
 # args = parser.parse_args()
 
 
-async def evaluator(payload: Dict):
-    
-    # dataset = load_dataset(args.dataset)
-    # dataset = load_dataset("allganize/RAG-Evaluation-Dataset-KO", split="test[:10]")
-    # metrics = args.metrics.split(",")
-    # selected_metrices=args.mode.split(",")
+
+async def evaluator(payload: EvaluationSchema):
     data = payload.get("dataset")
     retrieval_data = data.get("Retrieval")
     generation_data = data.get("Generation")
@@ -49,16 +46,16 @@ async def evaluator(payload: Dict):
             "generate_metrics": ['bleu'], # 'bleu', 'rouge','faithfulness'
             "dataset": {
                 "Retrieval": {
-                    "predicted_documents": predicted_docs,
-                    "actual_documents": actual_docs,
+                    "predicted_documents": predicted_docs, # List[Document(metadata={}, page_content=content)]
+                    "actual_documents": actual_docs, # List[List[Document(metadata={}, page_content=content)]]
                     "k": 5,
                 },
                 "Generation": {
-                    "query": query, # dataset['question']
-                    "reference": reference, #dataset['target_answer']
-                    "retrieved_contexts": retrieved_contexts , #dataset['target_file_name']
-                    "response": _response, #dataset['alli_gpt-4-turbo_answer']
-                    "model":"azure"
+                    "query": query, # dataset['question'] List[str]
+                    "reference": reference, #dataset['target_answer'] List[List[Document|str]] 
+                    "retrieved_contexts": retrieved_contexts , #dataset['target_file_name']  List[List[Document | str]],
+                    "response": _response, #dataset['alli_gpt-4-turbo_answer'] List[str],
+                    "model":"azure" # str
                     },
             },
             "evaluation_mode": "generation_only", # "retrieval_only", "generation_only", "full"
@@ -68,5 +65,3 @@ async def evaluator(payload: Dict):
     generator_evaluation_result = response.get("generator_evaluation_result")
     return retrieval_evaluation_result, generator_evaluation_result    
 
-if __name__ == "__main__":
-    asyncio.run(evaluator())
