@@ -10,15 +10,13 @@ env/
 
 # --- Local Data & Storage ---
 # Ignore the local Qdrant vector database storage. This should not be in version control.
-qdrant_storage/
-
+RAG/qdrant_storage/
+ARES/
 # --- Generated Outputs & Results ---
 # Ignore directories containing generated results, outputs, or logs.
-/results/
-/data/*
-/data/outputs/
-/data/results/
-/Benchmarks/
+RAG_Evaluation/results/
+RAG_Evaluation/data/
+RAG_Evaluation/Benchmarks/
 *.log
 *.out
 
