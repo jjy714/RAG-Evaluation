@@ -5,7 +5,7 @@ services:
       context: ./RAG_backend
       dockerfile: Dockerfile
     ports:
-      - "8001:8000"
+      - "8001:8001"
     volumes:
       - ./RAG_backend/app:/app/app
 
@@ -20,9 +20,9 @@ services:
 
   rag_evaluation:
     build:
-      context: .
+      context: ./RAG_Evaluation
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
+      - ./RAG_Evaluation:/app
