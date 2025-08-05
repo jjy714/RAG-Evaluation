@@ -7,7 +7,7 @@ from evaluator import evaluator
 import uuid
 import asyncio
 import json
-
+from api.v1.routers import api_router
 # Import your graph creation function and state
 from graphs.main_graph import create_main_graph, EvaluationState
 
@@ -16,6 +16,7 @@ app = FastAPI(
     description="An API to run RAG evaluation pipelines built with LangGraph.",
     version="1.0.0",
 )
+app.include_router(api_router, prefix="/api/v1")
 
 # --- In-memory storage for evaluation status and results ---
 evaluations = {}
@@ -80,43 +81,9 @@ Log as a file and store in User's -> session -> table in DB
 def read_root():
     return {"status": "ok"}
 
-@app.post("/evaluate", response_model=EvaluationStartResponse, status_code=202)
-async def start_evaluation(request: EvaluationRequest, background_tasks: BackgroundTasks):
-    """
-    Starts a new evaluation as a background task.
-    """
-    evaluation_id = str(uuid.uuid4())
-    evaluations[evaluation_id] = {"status": "pending", "result": None}
-    background_tasks.add_task(run_evaluation, evaluation_id, request)
-    return {"evaluation_id": evaluation_id}
-
-@app.get("/evaluate/{evaluation_id}", response_model=EvaluationStatusResponse)
-def get_evaluation_status(evaluation_id: str):
-    """
-    Checks the status and results of an evaluation.
-    """
-    evaluation = evaluations.get(evaluation_id)
-    if not evaluation:
-        raise HTTPException(status_code=404, detail="Evaluation not found")
-    return evaluation
 
 
 
-@app.get("/system/info")
-def get_system_info():
-    """
-    Retrieves metadata and graph information.
-    """
-    # This is a placeholder. In a real application, you would
-    # dynamically get this information.
-    return {
-        "graph": "MainEvaluationGraph",
-        "parameters": {
-            "supported_modes": ["retrieval_only", "generation_only", "full"],
-            "supported_retrieval_metrics": ["accuracy", "precision", "recall", "map", "mrr"],
-            "supported_generation_metrics": ["bertscore", "bleu", "rouge", "faithfulness", "g-eval"]
-        }
-    }
 
 async def dashboard_stream_generator():
     """
@@ -138,9 +105,3 @@ async def dashboard_stream_generator():
         yield f"data: {json.dumps(dashboard_data)}\n\n"
         await asyncio.sleep(1)
 
-@app.get("/dashboard/stream")
-async def dashboard_stream(request: Request):
-    """
-    Streams live updates from the dashboard using SSE.
-    """
-    return StreamingResponse(dashboard_stream_generator(), media_type="text/event-stream")
