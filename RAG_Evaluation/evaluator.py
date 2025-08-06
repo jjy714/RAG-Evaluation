@@ -1,18 +1,8 @@
-import argparse
-import datasets
 from pathlib import Path
-from dotenv import load_dotenv
-from datasets import load_dataset, Dataset
 from graphs import create_main_graph
-from typing import Dict
-from langchain_core.documents import Document
-import pandas as pd
-from datasets import load_dataset
 from pathlib import Path
-from pydantic import BaseModel
 from utils import dataprocess_retrieve, dataprocess_generate
 from schema import EvaluationSchema
-import asyncio
 
 
 
@@ -20,15 +10,11 @@ PATH = Path(".").resolve() / "data"
 EXAMPLE_DATASET = PATH / "response_merged_output.csv"
 
 
-# action="store_true"
-# parser = argparse.ArgumentParser()
-# parser.add_argument("-m", "--metrics", type=str, help="Which Metrics to evaluate")
-# parser.add_argument("-d", "--dataset", type=str, help="Dataset to evaluate on")
-# parser.add_argument(
-#     "-M", "--mode", type=str, help="Evaluate on Retrieval, Generator, or Overall"
-# )
-# args = parser.parse_args()
+"""
+RETRIEVAL DATA: Retrieved Documents, Answer Documents
+GENERATED DATA: User Query, Reference Document, Answer Response, LLM Response
 
+"""
 
 
 async def evaluator(payload: EvaluationSchema):
