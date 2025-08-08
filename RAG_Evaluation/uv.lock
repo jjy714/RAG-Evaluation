@@ -998,25 +998,8 @@ wheels = [
 
 [[package]]
 name = "krag"
-version = "0.0.32"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cython" },
-    { name = "kiwipiepy" },
-    { name = "korouge-score" },
-    { name = "langchain" },
-    { name = "langchain-community" },
-    { name = "langchain-huggingface" },
-    { name = "langchain-ollama" },
-    { name = "langchain-openai" },
-    { name = "rank-bm25" },
-    { name = "scikit-learn" },
-    { name = "seaborn" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/6d/6f/63c457122aa72c87e2e6f8a6444de1fdb9688cb81671c2902b102a7f2418/krag-0.0.32.tar.gz", hash = "sha256:3c483190a757ffaa04cd2aba3f31737651fd86ea4d513fa917e74c01bcb5d707", size = 77060, upload-time = "2025-06-29T04:37:37.84Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b4/f1/c97eb2625aeef0ff43eeb24f2a5aaf594054012fd167d0fa6bcf5166e95f/krag-0.0.32-py3-none-any.whl", hash = "sha256:42571c49ce95b43f9eb01cfbcec7a6bc09b64fdfc4cb65feb2afdd4e22ff8dd9", size = 13084, upload-time = "2025-06-29T04:37:36.412Z" },
-]
+version = "0.1.0"
+source = { editable = "metrics/krag" }
 
 [[package]]
 name = "langchain"
@@ -2381,7 +2364,7 @@ requires-dist = [
     { name = "kiwipiepy-model", specifier = "==0.18.0" },
     { name = "kiwisolver", specifier = "==1.4.8" },
     { name = "korouge-score", specifier = "==0.1.4" },
-    { name = "krag", specifier = "==0.0.32" },
+    { name = "krag", editable = "metrics/krag" },
     { name = "langchain", specifier = "==0.3.26" },
     { name = "langchain-community", specifier = "==0.3.26" },
     { name = "langchain-core", specifier = "==0.3.66" },

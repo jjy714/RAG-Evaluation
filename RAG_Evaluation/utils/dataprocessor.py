@@ -3,9 +3,6 @@ from fastapi import File
 from datasets import load_dataset
 from pathlib import Path
 import pandas as pd
-import asyncio
-from . import datatype_checker
-
 
 
 def dataprocess_retrieve(dataset):

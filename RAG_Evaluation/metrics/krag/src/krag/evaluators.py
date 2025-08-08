@@ -48,25 +48,13 @@ class OfflineRetrievalEvaluators:
             raise ValueError("입력 문서 리스트가 비어있을 수 없습니다.")
         if len(actual_docs) != len(predicted_docs):
             raise ValueError("실제 문서 리스트와 예측 문서 리스트의 길이가 같아야 합니다.")
-                # --- 수정된 부분 ---
-        # averaging_method가 문자열이면 Enum 멤버로 변환합니다.
-        if isinstance(averaging_method, str):
-            try:
-                self.averaging_method = AveragingMethod(averaging_method.lower())
-            except ValueError:
-                raise ValueError(f"'{averaging_method}'는 유효한 AveragingMethod가 아닙니다. 'micro', 'macro', 'both' 중 하나여야 합니다.")
-        else:
-            self.averaging_method = averaging_method
         
-        
-        # --- 수정 끝 ---
         self.actual_docs = actual_docs 
         self.predicted_docs = predicted_docs  
         self.match_method = match_method
         self.averaging_method = averaging_method
         self.matching_criteria = matching_criteria
         self._cache = {}
-        
 
     @lru_cache(maxsize=1000)
     def text_match(self, actual_text: str, predicted_text: Union[str, List[str]]) -> bool:
@@ -109,61 +97,37 @@ class OfflineRetrievalEvaluators:
     
 
 
-    # def calculate_precision(self, k: Optional[int] = None) -> Dict[str, float]:
-    #     """정밀도 계산"""
-    #     result = {}
-    #     micro_precision = 0
-    #     macro_precisions = []
-
-    #     for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
-    #         k_effective = min(k or len(predicted_docs), len(predicted_docs))
-    #         relevant_count = sum(
-    #             1 for predicted_doc in predicted_docs[:k_effective]
-    #             if any(self.text_match(actual_doc.page_content, predicted_doc.page_content) for actual_doc in actual_docs)
-    #         )
-    #         micro_precision += relevant_count
-    #         macro_precisions.append(relevant_count / k_effective if k_effective > 0 else 0)
-
-    #     total_predicted = sum(min(k or len(predicted_docs), len(predicted_docs)) for predicted_docs in self.predicted_docs)
-        
-    #     if self.averaging_method in [AveragingMethod.MICRO, AveragingMethod.BOTH]:
-    #         result["micro_precision"] = micro_precision / total_predicted if total_predicted > 0 else 0.0
-        
-    #     if self.averaging_method in [AveragingMethod.MACRO, AveragingMethod.BOTH]:
-    #         result["macro_precision"] = sum(macro_precisions) / len(macro_precisions) if macro_precisions else 0.0
-            
-    #     return result
-
     def calculate_precision(self, k: Optional[int] = None) -> Dict[str, float]:
+        """정밀도 계산"""
         result = {}
-        total_relevant_found_for_micro = 0
-        total_predicted_for_micro = 0
-        macro_precisions_list = []
-        for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
-            limit = min(k, len(predicted_docs)) if k is not None else len(predicted_docs)
-            ground_truth_set = {doc.page_content for doc in actual_docs}
-            relevant_count_for_this_query = 0
-            for pred_doc in predicted_docs[:limit]:
-                if pred_doc.page_content in ground_truth_set:
-                    relevant_count_for_this_query += 1
-                    ground_truth_set.remove(pred_doc.page_content)
-            total_relevant_found_for_micro += relevant_count_for_this_query
-            total_predicted_for_micro += limit
-            precision_for_this_query = relevant_count_for_this_query / limit if limit > 0 else 0
-            macro_precisions_list.append(precision_for_this_query)
+        micro_precision = 0
+        macro_precisions = []
 
-        try: 
-            result["micro_precision"] = total_relevant_found_for_micro / total_predicted_for_micro
-            result["macro_precision"] = float(np.mean(macro_precisions_list)) if macro_precisions_list else 0.0
-        except Exception as e: 
-            print(f"Error while calculating precision: {e}")    
+        for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
+            k_effective = min(k or len(predicted_docs), len(predicted_docs))
+            relevant_count = sum(
+                1 for predicted_doc in predicted_docs[:k_effective]
+                if any(self.text_match(actual_doc.page_content, predicted_doc.page_content) for actual_doc in actual_docs)
+            )
+            micro_precision += relevant_count
+            macro_precisions.append(relevant_count / k_effective if k_effective > 0 else 0)
+
+        total_predicted = sum(min(k or len(predicted_docs), len(predicted_docs)) for predicted_docs in self.predicted_docs)
+        
+        if self.averaging_method in [AveragingMethod.MICRO, AveragingMethod.BOTH]:
+            result["micro_precision"] = micro_precision / total_predicted if total_predicted > 0 else 0.0
+        
+        if self.averaging_method in [AveragingMethod.MACRO, AveragingMethod.BOTH]:
+            result["macro_precision"] = sum(macro_precisions) / len(macro_precisions) if macro_precisions else 0.0
+            
         return result
 
-
     def calculate_recall(self, k: Optional[int] = None) -> Dict[str, float]:
+        """재현율 계산"""
         result = {}
         micro_recall = 0
         macro_recalls = []
+
         for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
             relevant_count = sum(
                 1 for actual_doc in actual_docs
@@ -171,201 +135,125 @@ class OfflineRetrievalEvaluators:
             )
             micro_recall += relevant_count
             macro_recalls.append(relevant_count / len(actual_docs) if actual_docs else 0)
+
         total_actual = sum(len(actual_docs) for actual_docs in self.actual_docs)
-        try:
+        
+        if self.averaging_method in [AveragingMethod.MICRO, AveragingMethod.BOTH]:
             result["micro_recall"] = micro_recall / total_actual if total_actual > 0 else 0.0
+        
+        if self.averaging_method in [AveragingMethod.MACRO, AveragingMethod.BOTH]:
             result["macro_recall"] = sum(macro_recalls) / len(macro_recalls) if macro_recalls else 0.0
-        except Exception as e:
-            print(f"Error while calculating recall: {e}")    
+            
         return result
     
 
     def calculate_f1_score(self, k: Optional[int] = None) -> Dict[str, float]:
+        """F1 점수 계산
+        
+        Args:
+            k: 상위 k개 문서 고려
+
+        Returns:
+            F1 점수 딕셔너리 
+        """
         precision = self.calculate_precision(k)  
         recall = self.calculate_recall(k)
+
         result = {}
-        try:
+        
+        if self.averaging_method in [AveragingMethod.MICRO, AveragingMethod.BOTH]:
             micro_p = precision.get('micro_precision', 0.0)
             micro_r = recall.get('micro_recall', 0.0)
-            result['micro_f1'] = 2 * (micro_p * micro_r) / (micro_p + micro_r) if micro_p + micro_r > 0 else 0.0
-
+            if micro_p + micro_r > 0:
+                result['micro_f1'] = 2 * (micro_p * micro_r) / (micro_p + micro_r)
+                
+        if self.averaging_method in [AveragingMethod.MACRO, AveragingMethod.BOTH]:
             macro_p = precision.get('macro_precision', 0.0) 
             macro_r = recall.get('macro_recall', 0.0)
-            result['macro_f1'] = 2 * (macro_p * macro_r) / (macro_p + macro_r) if macro_p + macro_r > 0 else 0.0
-        except Exception as e:
-            print("Error while calculating F1 Score: {e}")
+            if macro_p + macro_r > 0:
+                result['macro_f1'] = 2 * (macro_p * macro_r) / (macro_p + macro_r)
+
         return result
 
     def calculate_mrr(self, k: Optional[int] = None) -> Dict[str, float]:
         """
-        (수정됨) 평균 역순위(Mean Reciprocal Rank, MRR)를 올바르게 계산합니다.
+        평균 역순위(Mean Reciprocal Rank, MRR)를 계산합니다.
+
+        Args:
+            k (Optional[int], optional): 고려할 상위 문서 수. 기본값은 None
+
+        Returns:
+            Dict[str, float]: MRR 점수 딕셔너리
         """
         reciprocal_ranks = []
         for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
-            ground_truth_set = {doc.page_content for doc in actual_docs}
-            found = False
-            limit = k if k is not None else len(predicted_docs)
-            for rank, pred_doc in enumerate(predicted_docs[:limit], start=1):
-                if pred_doc.page_content in ground_truth_set:
+            for rank, pred_doc in enumerate(predicted_docs[:k], start=1):
+                if any(self.text_match(actual_doc.page_content, pred_doc.page_content) for actual_doc in actual_docs):
                     reciprocal_ranks.append(1 / rank)
-                    found = True
-                    break # 첫 번째 일치 항목을 찾으면 중단
-            if not found:
+                    break
+            else:
                 reciprocal_ranks.append(0)
         
-        mrr = np.mean(reciprocal_ranks) if reciprocal_ranks else 0.0
+        mrr = sum(reciprocal_ranks) / len(reciprocal_ranks) if reciprocal_ranks else 0.0
         return {"mrr": mrr}
-
-    # def old_calculate_map(self, k: Optional[int] = None) -> Dict[str, float]:
-    #     """
-    #     평균 정확도(Mean Average Precision, MAP)를 계산합니다.
-
-    #     Args:
-    #         k (Optional[int], optional): 고려할 상위 문서 수. 기본값은 None
-
-    #     Returns:
-    #         Dict[str, float]: MAP 점수 딕셔너리
-    #     """
-
-    #     average_precisions = []
-    #     for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
-    #         relevant_docs = 0
-    #         precision_sum = 0
-    #         for i, pred_doc in enumerate(predicted_docs[:k], start=1):
-    #             if any(self.text_match(actual_doc.page_content, pred_doc.page_content) for actual_doc in actual_docs):
-    #                 relevant_docs += 1
-    #                 precision_sum += relevant_docs / i
-    #         average_precision = precision_sum / len(actual_docs) if actual_docs else 0
-    #         average_precisions.append(average_precision)
-        
-    #     map_score = sum(average_precisions) / len(average_precisions) if average_precisions else 0.0
-    #     return {"map": map_score}
 
     def calculate_map(self, k: Optional[int] = None) -> Dict[str, float]:
         """
-        Calculates Mean Average Precision (MAP) correctly.
+        평균 정확도(Mean Average Precision, MAP)를 계산합니다.
+
+        Args:
+            k (Optional[int], optional): 고려할 상위 문서 수. 기본값은 None
+
+        Returns:
+            Dict[str, float]: MAP 점수 딕셔너리
         """
+
         average_precisions = []
         for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
-            
-            # Create a set of the ground truth contents for efficient lookup and removal.
-            # This ensures each ground truth document is only counted once.
-            ground_truth_set = {doc.page_content for doc in actual_docs}
-            
-            relevant_docs_found = 0
+            relevant_docs = 0
             precision_sum = 0
-            
-            # We only need to check the top k predictions
-            predictions_to_check = predicted_docs[:k]
-            
-            for i, pred_doc in enumerate(predictions_to_check, start=1):
-                # Check if the predicted document's content is in our set of UNSEEN ground truths
-                if pred_doc.page_content in ground_truth_set:
-                    relevant_docs_found += 1
-                    precision_sum += relevant_docs_found / i
-                    
-                    # IMPORTANT: Remove the found document from the set to prevent re-matching
-                    ground_truth_set.remove(pred_doc.page_content)
-
-            # The denominator is the total number of actual relevant documents for this query.
-            total_relevant_docs = len(actual_docs)
-            average_precision = precision_sum / total_relevant_docs if total_relevant_docs > 0 else 0
+            for i, pred_doc in enumerate(predicted_docs[:k], start=1):
+                if any(self.text_match(actual_doc.page_content, pred_doc.page_content) for actual_doc in actual_docs):
+                    relevant_docs += 1
+                    precision_sum += relevant_docs / i
+            average_precision = precision_sum / len(actual_docs) if actual_docs else 0
             average_precisions.append(average_precision)
         
-        map_score = np.mean(average_precisions) if average_precisions else 0.0
+        map_score = sum(average_precisions) / len(average_precisions) if average_precisions else 0.0
         return {"map": map_score}
 
 
-
-
-    # def old_calculate_ndcg(self, k: Optional[int] = None) -> Dict[str, float]:
-    #     """
-    #     정규화된 할인 누적 이득(Normalized Discounted Cumulative Gain, NDCG)을 계산합니다.
-
-    #     Args:
-    #         k (Optional[int], optional): 고려할 상위 문서 수. 기본값은 None
-
-    #     Returns:
-    #         Dict[str, float]: NDCG 점수 딕셔너리
-    #     """
-    #     def dcg(relevances):
-    #         return sum((2**rel - 1) / math.log2(i + 2) for i, rel in enumerate(relevances[:k]))
-
-    #     ndcg_scores = []
-    #     for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
-    #         relevances = [
-    #             1 if any(self.text_match(actual_doc.page_content, pred_doc.page_content) for actual_doc in actual_docs) else 0
-    #             for pred_doc in predicted_docs[:k]
-    #         ]
-    #         ideal_relevances = [1] * len(actual_docs) + [0] * (len(predicted_docs) - len(actual_docs)) # 이상적인 경우는 모든 실제 문서가 관련성이 높다고 가정
-    #         ideal_relevances = ideal_relevances[:k] # k개 문서만 고려
-
-    #         relevances = relevances[:k] # k개 문서만 고려
-            
-    #         dcg_score = dcg(relevances)
-    #         idcg_score = dcg(ideal_relevances)
-            
-    #         ndcg_scores.append(dcg_score / idcg_score if idcg_score > 0 else 0)
-        
-    #     ndcg = sum(ndcg_scores) / len(ndcg_scores) if ndcg_scores else 0.0
-    #     return {"ndcg": ndcg}
-
     def calculate_ndcg(self, k: Optional[int] = None) -> Dict[str, float]:
         """
-        정규화된 할인 누적 이득(Normalized Discounted Cumulative Gain, NDCG)을 올바르게 계산합니다.
+        정규화된 할인 누적 이득(Normalized Discounted Cumulative Gain, NDCG)을 계산합니다.
 
         Args:
-            k (Optional[int], optional): 고려할 상위 문서 수. 기본값은 None.
+            k (Optional[int], optional): 고려할 상위 문서 수. 기본값은 None
 
         Returns:
-            Dict[str, float]: NDCG 점수 딕셔너리.
+            Dict[str, float]: NDCG 점수 딕셔너리
         """
-        # 내부 헬퍼 함수로 DCG 계산
-        def dcg(relevances: List[int]) -> float:
-            """Calculates Discounted Cumulative Gain for a list of relevance scores."""
-            # k를 고려하여 relevances 리스트를 이미 슬라이싱했으므로, 여기서는 전체를 사용합니다.
-            return sum((2**rel - 1) / math.log2(i + 2) for i, rel in enumerate(relevances))
+        def dcg(relevances):
+            return sum((2**rel - 1) / math.log2(i + 2) for i, rel in enumerate(relevances[:k]))
 
         ndcg_scores = []
         for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
-            # k가 지정되지 않은 경우, 예측된 문서의 전체 수를 k로 사용
-            limit = k if k is not None else len(predicted_docs)
-            
-            # 실제 정답 문서의 내용을 set으로 만들어 중복 확인 및 빠른 조회를 가능하게 함
-            ground_truth_set = {doc.page_content for doc in actual_docs}
-            
-            # --- 예측 결과에 대한 관련성 점수(relevance) 계산 ---
-            relevances = []
-            for pred_doc in predicted_docs[:limit]:
-                # 예측된 문서가 아직 사용되지 않은 정답 문서 set에 있는지 확인
-                if pred_doc.page_content in ground_truth_set:
-                    relevances.append(1)
-                    # 한 번 사용된 정답은 set에서 제거하여 중복 계산을 방지
-                    ground_truth_set.remove(pred_doc.page_content)
-                else:
-                    relevances.append(0)
-            
-            # --- 이상적인 순위(Ideal Ranking)에 대한 관련성 점수 계산 ---
-            # 이상적인 순위는 실제 정답 문서의 수만큼 1이 있고, 나머지는 0입니다.
-            num_actual_docs = len(actual_docs)
-            # 상위 k개 까지만 고려합니다.
-            ideal_relevances = [1] * min(num_actual_docs, limit)
-            # k개까지 0으로 채웁니다.
-            ideal_relevances += [0] * (limit - len(ideal_relevances))
+            relevances = [
+                1 if any(self.text_match(actual_doc.page_content, pred_doc.page_content) for actual_doc in actual_docs) else 0
+                for pred_doc in predicted_docs[:k]
+            ]
+            ideal_relevances = [1] * len(actual_docs) + [0] * (len(predicted_docs) - len(actual_docs)) # 이상적인 경우는 모든 실제 문서가 관련성이 높다고 가정
+            ideal_relevances = ideal_relevances[:k] # k개 문서만 고려
 
-            # DCG와 IDCG(Ideal DCG) 계산
+            relevances = relevances[:k] # k개 문서만 고려
+            
             dcg_score = dcg(relevances)
             idcg_score = dcg(ideal_relevances)
             
-            # NDCG 계산 및 리스트에 추가
-            ndcg_score = dcg_score / idcg_score if idcg_score > 0 else 0.0
-            ndcg_scores.append(ndcg_score)
+            ndcg_scores.append(dcg_score / idcg_score if idcg_score > 0 else 0)
         
-        # 전체 쿼리에 대한 NDCG 점수의 평균 계산
-        mean_ndcg = np.mean(ndcg_scores) if ndcg_scores else 0.0
-        return {"ndcg": mean_ndcg}
-
-
+        ndcg = sum(ndcg_scores) / len(ndcg_scores) if ndcg_scores else 0.0
+        return {"ndcg": ndcg}
 
     def get_metrics_by_averaging_method(self, k: Optional[int] = None) -> str:
         """

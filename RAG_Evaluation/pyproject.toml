@@ -75,7 +75,6 @@ dependencies = [
     "kiwipiepy-model==0.18.0",
     "kiwisolver==1.4.8",
     "korouge-score==0.1.4",
-    "krag==0.0.32",
     "langchain==0.3.26",
     "langchain-community==0.3.26",
     "langchain-core==0.3.66",
@@ -183,4 +182,8 @@ dependencies = [
     "yarl==1.20.1",
     "zlib-state==0.1.9",
     "zstandard==0.23.0",
+    "krag",
 ]
+
+[tool.uv.sources]
+krag = { path = "metrics/krag", editable = true }

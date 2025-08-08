@@ -1,5 +1,5 @@
-from evaluator_schema import *
-from payload_schema import *
+from .evaluator_schema import *
+from .payload_schema import *
 __any__ = [
     'RetrievalModel',
     'GenerationModel',

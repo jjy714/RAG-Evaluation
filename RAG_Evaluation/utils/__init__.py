@@ -1,9 +1,8 @@
 
-from utils.datatype_checker import datatype_checker
-from .dataprocess_retrieve import dataprocess_retrieve, dataprocess_generate
+
+from .dataprocessor import dataprocess_generate, dataprocess_retrieve
 
 __any__ = [
-    'datatype_checker'
     'dataprocess_retrieve',
     'dataprocess_generate'
 ]
