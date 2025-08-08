@@ -72,9 +72,6 @@ Log as a file and store in User's -> session -> table in DB
 
 
 
-
-
-
 # --- API Endpoints ---
 
 @app.get("/")
