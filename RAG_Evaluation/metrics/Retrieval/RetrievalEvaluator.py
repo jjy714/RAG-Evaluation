@@ -1,7 +1,7 @@
 from langchain_core.documents  import Document
 from krag.evaluators import OfflineRetrievalEvaluators
-
-
+from .context_relevance import context_relevance
+from langchain_openai import ChatOpenAI, AzureChatOpenAI
 # from .MRR import map 
 # from .MRR import mrr
 # from .precision import precision, precision_at_k
@@ -10,6 +10,7 @@ from krag.evaluators import OfflineRetrievalEvaluators
 # from .response_relevancy import response_relevancy
 from typing import Union, List, Dict, Optional
 from enum import Enum
+import asyncio
 
 
 # from .accuracy 
@@ -28,8 +29,10 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
 
     def __init__(
             self,
+            user_input: List[str],
             actual_docs: List[List[Document]], 
-            predicted_docs: List[List[Document]], 
+            predicted_docs: List[List[Document]],
+            llm: ChatOpenAI | AzureChatOpenAI,
             match_method: str = "text", 
             averaging_method: Union[str, AveragingMethod] = AveragingMethod.BOTH,
             matching_criteria: MatchingCriteria = MatchingCriteria.ALL
@@ -41,12 +44,22 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             averaging_method, 
             matching_criteria
         )
+        self.user_input = user_input
+        self.llm = llm
+        self.predicted_docs = predicted_docs
         
     def f1(self, k:int=5) -> Dict[str, float]:
         return self.calculate_f1_score(k=k).get("micro_f1"), self.calculate_f1_score(k=k).get("macro_f1")
             
     def mrr(self, k:int=5) -> Dict[str, float]:
         return self.calculate_mrr(k=k).get("mrr")
+    
+    async def context_relevance(self) -> Dict[str, float]:
+        return await context_relevance(
+            llm=self.llm,
+            user_input=self.user_input,
+            retrieved_contexts=self.predicted_docs
+            )
     
     def map(self, k:int=5) -> Dict[str, float]:
         return self.calculate_map(k=k).get("map")

@@ -23,7 +23,8 @@ class RetrievalEvaluationState(TypedDict):
     mrr_score: Optional[float]
     map_score: Optional[float]
     ndcg_score: Optional[float]
-
+    context_relevance_score: Optional[float]
+    
     precision_micro: Optional[float]
     precision_macro: Optional[float]
     recall_micro: Optional[float]
@@ -92,9 +93,17 @@ def ndcg_node(state: RetrievalEvaluationState) -> dict:
     sleep(2)
     return {"ndcg_score": ndcg_score}
 
+def context_relevance_node(state: RetrievalEvaluationState) -> dict:
+    """Node to calculate only the Context Relevance score."""
+    print("--- (2e) Running Context Relevance Node ---")
+    evaluator = state["evaluator"]
+    context_relevance_score = evaluator.context_relevance()
+    sleep(2)
+    return {"context_relevance_score": context_relevance_score}
+
 def precision_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the Precision@5 score."""
-    print("--- (2e) Running Precision Node ---")
+    print("--- (2f) Running Precision Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
     precision_micro, precision_macro = evaluator.precision(k=k)
@@ -107,7 +116,7 @@ def precision_node(state: RetrievalEvaluationState) -> dict:
 
 def recall_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the Recall@5 score."""
-    print("--- (2f) Running Recall Node ---")
+    print("--- (2g) Running Recall Node ---")
     evaluator = state["evaluator"]
     k = state["k"]    
     recall_micro, recall_macro = evaluator.recall(k=k)
@@ -125,6 +134,7 @@ def finalize_node(state: RetrievalEvaluationState) -> dict:
         "mrr": state.get("mrr_score"),
         "map": state.get("map_score"),
         "ndcg": state.get("ndcg_score"),
+        "context_relevance": state.get("context_relevance_score"),
         "f1_micro": state.get("f1_micro"),
         "f1_macro": state.get("f1_macro"),
         "precision_micro": state.get("precision_micro"),
@@ -159,6 +169,7 @@ def create_retrieval_subgraph(metrics_to_run: List[str]):
     "map": map_node,
     "f1": f1_node,
     "ndcg": ndcg_node,
+    "context_relevance": context_relevance_node,
     "precision": precision_node,
     "recall": recall_node
     }
