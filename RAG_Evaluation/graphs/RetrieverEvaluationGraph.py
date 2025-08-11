@@ -4,17 +4,20 @@ from langgraph.graph import StateGraph, END
 from langchain_core.documents import Document
 from metrics import RetrievalEvaluator
 from time import sleep
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
 import logging
 
-METRICS_LIST = ["mrr", "map", "f1", "ndcg", "precision", "recall" ]
+METRICS_LIST = ["mrr", "map", "f1", "ndcg", "context_relevance","precision", "recall" ]
 
 # --- 2. Define the State for the Graph ---
 # We add an 'evaluator' field to hold the instance and 'metrics_to_run_copy' for the router.
 class RetrievalEvaluationState(TypedDict):
     # --- INPUTS ---
+    user_input: List[str]
     predicted_documents: List[List[Document]]
     actual_documents: List[List[Document]]
     metrics_to_run: List[str]
+    model: AzureChatOpenAI | ChatOpenAI | str
     k: int
     # --- INTERNAL STATE ---
     evaluator: Optional[RetrievalEvaluator]
@@ -43,8 +46,10 @@ def instantiate_evaluator_node(state: RetrievalEvaluationState) -> dict:
     """
     print("\n--- (1) Instantiating Evaluator ---")
     evaluator = RetrievalEvaluator(
+        user_input=state["user_input"],
         actual_docs=state["actual_documents"],
-        predicted_docs=state["predicted_documents"]
+        predicted_docs=state["predicted_documents"],
+        model=state["model"],
     )
     sleep(2)
     return {

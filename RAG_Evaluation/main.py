@@ -3,7 +3,7 @@ from fastapi import File, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from schema import EvaluationRequest, EvaluationStartResponse, EvaluationStatusResponse
-from evaluator import evaluator
+from api.v1.endpoints.evaluator import evaluator
 import uuid
 import asyncio
 import json

@@ -97,6 +97,25 @@ class OfflineRetrievalEvaluators:
     
 
 
+    def single_calculate_precision(self, actual_doc, predicted_doc, k: Optional[int] = None) -> Dict[str, float]:
+        """정밀도 계산"""
+        result = {}
+        micro_precision = 0
+        macro_precisions = []
+
+        k_effective = min(k or len(predicted_doc), len(predicted_doc))
+        relevant_count = sum(
+            1 for predicted_doc in predicted_doc[:k_effective]
+            if any(self.text_match(actual_doc.page_content, predicted_doc.page_content) in actual_doc)
+        )
+        micro_precision += relevant_count
+        macro_precisions.append(relevant_count / k_effective if k_effective > 0 else 0)
+
+        total_predicted = sum(min(k or len(predicted_docs), len(predicted_docs)) for predicted_docs in self.predicted_docs)
+        result["micro_precision"] = micro_precision / total_predicted if total_predicted > 0 else 0.0
+        result["macro_precision"] = sum(macro_precisions) / len(macro_precisions) if macro_precisions else 0.0
+        return result
+
     def calculate_precision(self, k: Optional[int] = None) -> Dict[str, float]:
         """정밀도 계산"""
         result = {}
@@ -113,13 +132,8 @@ class OfflineRetrievalEvaluators:
             macro_precisions.append(relevant_count / k_effective if k_effective > 0 else 0)
 
         total_predicted = sum(min(k or len(predicted_docs), len(predicted_docs)) for predicted_docs in self.predicted_docs)
-        
-        if self.averaging_method in [AveragingMethod.MICRO, AveragingMethod.BOTH]:
-            result["micro_precision"] = micro_precision / total_predicted if total_predicted > 0 else 0.0
-        
-        if self.averaging_method in [AveragingMethod.MACRO, AveragingMethod.BOTH]:
-            result["macro_precision"] = sum(macro_precisions) / len(macro_precisions) if macro_precisions else 0.0
-            
+        result["micro_precision"] = micro_precision / total_predicted if total_predicted > 0 else 0.0
+        result["macro_precision"] = sum(macro_precisions) / len(macro_precisions) if macro_precisions else 0.0
         return result
 
     def calculate_recall(self, k: Optional[int] = None) -> Dict[str, float]:
@@ -138,11 +152,8 @@ class OfflineRetrievalEvaluators:
 
         total_actual = sum(len(actual_docs) for actual_docs in self.actual_docs)
         
-        if self.averaging_method in [AveragingMethod.MICRO, AveragingMethod.BOTH]:
-            result["micro_recall"] = micro_recall / total_actual if total_actual > 0 else 0.0
-        
-        if self.averaging_method in [AveragingMethod.MACRO, AveragingMethod.BOTH]:
-            result["macro_recall"] = sum(macro_recalls) / len(macro_recalls) if macro_recalls else 0.0
+        result["micro_recall"] = micro_recall / total_actual if total_actual > 0 else 0.0
+        result["macro_recall"] = sum(macro_recalls) / len(macro_recalls) if macro_recalls else 0.0
             
         return result
     
@@ -161,17 +172,16 @@ class OfflineRetrievalEvaluators:
 
         result = {}
         
-        if self.averaging_method in [AveragingMethod.MICRO, AveragingMethod.BOTH]:
-            micro_p = precision.get('micro_precision', 0.0)
-            micro_r = recall.get('micro_recall', 0.0)
-            if micro_p + micro_r > 0:
-                result['micro_f1'] = 2 * (micro_p * micro_r) / (micro_p + micro_r)
+
+        micro_p = precision.get('micro_precision', 0.0)
+        micro_r = recall.get('micro_recall', 0.0)
+        if micro_p + micro_r > 0:
+            result['micro_f1'] = 2 * (micro_p * micro_r) / (micro_p + micro_r)
                 
-        if self.averaging_method in [AveragingMethod.MACRO, AveragingMethod.BOTH]:
-            macro_p = precision.get('macro_precision', 0.0) 
-            macro_r = recall.get('macro_recall', 0.0)
-            if macro_p + macro_r > 0:
-                result['macro_f1'] = 2 * (macro_p * macro_r) / (macro_p + macro_r)
+        macro_p = precision.get('macro_precision', 0.0) 
+        macro_r = recall.get('macro_recall', 0.0)
+        if macro_p + macro_r > 0:
+            result['macro_f1'] = 2 * (macro_p * macro_r) / (macro_p + macro_r)
 
         return result
 

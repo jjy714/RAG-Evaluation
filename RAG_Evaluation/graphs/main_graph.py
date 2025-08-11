@@ -37,9 +37,12 @@ async def evaluate_retrieval(state: EvaluationState) -> Dict:
     retrieve_subgraph = create_retrieval_subgraph(state["retrieve_metrics"])
 
     retrieval_input: RetrievalEvaluationState = {
+        # "user_input":  state["dataset"]["Retrieval"]["user_input"],
+        "user_input":  Optional[state["dataset"]["Generation"]["query"]],
         "predicted_documents": state["dataset"]["Retrieval"]["predicted_documents"],
         "actual_documents": state["dataset"]["Retrieval"]["actual_documents"],
         "metrics_to_run": state["retrieve_metrics"],
+        "model": state["dataset"]["Generation"]["model"],
         "k": state["dataset"]["Retrieval"]["k"],
     }
 

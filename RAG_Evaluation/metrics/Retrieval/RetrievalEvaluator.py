@@ -32,7 +32,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             user_input: List[str],
             actual_docs: List[List[Document]], 
             predicted_docs: List[List[Document]],
-            llm: ChatOpenAI | AzureChatOpenAI,
+            model: ChatOpenAI | AzureChatOpenAI,
             match_method: str = "text", 
             averaging_method: Union[str, AveragingMethod] = AveragingMethod.BOTH,
             matching_criteria: MatchingCriteria = MatchingCriteria.ALL
@@ -45,7 +45,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             matching_criteria
         )
         self.user_input = user_input
-        self.llm = llm
+        self.model = model
         self.predicted_docs = predicted_docs
         
     def f1(self, k:int=5) -> Dict[str, float]:
@@ -56,7 +56,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
     
     async def context_relevance(self) -> Dict[str, float]:
         return await context_relevance(
-            llm=self.llm,
+            llm=self.model,
             user_input=self.user_input,
             retrieved_contexts=self.predicted_docs
             )

@@ -1,8 +1,6 @@
-from fastapi import APIRouter, HTTPException
 
-router = APIRouter
 
-@router.post("/evaluate", response_model=EvaluationStartResponse, status_code=202)
+
 async def start_evaluation(request: EvaluationRequest, background_tasks: BackgroundTasks):
     """
     Starts a new evaluation as a background task.

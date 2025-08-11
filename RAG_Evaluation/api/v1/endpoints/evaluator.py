@@ -3,8 +3,12 @@ from graphs import create_main_graph
 from pathlib import Path
 from utils import dataprocess_retrieve, dataprocess_generate
 import asyncio
-from schema import EvaluationSchema, EvaluationRequest
 
+# from schema import EvaluationSchema, EvaluationRequest
+from uuid import uuid4
+from fastapi import APIRouter, HTTPException
+
+router = APIRouter
 
 PATH = Path(".").resolve() / "data"
 EXAMPLE_DATASET = PATH / "response_merged_output.csv"
@@ -14,22 +18,9 @@ EXAMPLE_DATASET = PATH / "response_merged_output.csv"
 RETRIEVAL DATA: Retrieved Documents, Answer Documents
 GENERATED DATA: User Query, Reference Document, Answer Response, LLM Response
 """
-
-
-
-async def evaluator(payload: EvaluationRequest):
-    # data = payload.get("dataset")
-    # retrieval_data = data.get("Retrieval")
-    # generation_data = data.get("Generation")
-    # config = payload.get("config")
-
-    predicted_docs, actual_docs = dataprocess_retrieve(EXAMPLE_DATASET)
-    query, reference, retrieved_contexts, _response = dataprocess_generate(
-        EXAMPLE_DATASET
-    )
-    main_graph = create_main_graph()
-    response = await main_graph.ainvoke(
-        {
+predicted_docs, actual_docs = dataprocess_retrieve(EXAMPLE_DATASET)
+query, reference, retrieved_contexts, _response = dataprocess_generate(EXAMPLE_DATASET)
+payload = {
             "retrieve_metrics": [
                 "mrr",
                 "map",
@@ -38,11 +29,13 @@ async def evaluator(payload: EvaluationRequest):
                 "precision",
                 "recall",
             ],  # "mrr" "map", "f1", "ndcg", "precision", "recall"
-            "generate_metrics": ["bleu"],  # 'bleu', 'rouge','faithfulness'
+            "generate_metrics": ["bleu", "rouge"],  # 'bleu', 'rouge','faithfulness'
             "dataset": {
                 "Retrieval": {
+                    "user_input": None,
                     "predicted_documents": predicted_docs,  # List[Document(metadata={}, page_content=content)]
                     "actual_documents": actual_docs,  # List[List[Document(metadata={}, page_content=content)]]
+                    "model": "None",
                     "k": 5,
                 },
                 "Generation": {
@@ -55,7 +48,18 @@ async def evaluator(payload: EvaluationRequest):
             },
             "evaluation_mode": "full",  # "retrieval_only", "generation_only", "full"
         }
-    )
+
+
+@router.post("/evaluate", response_model=EvaluationStartResponse, status_code=202)
+async def evaluator(payload):
+    # data = payload.get("dataset")
+    # retrieval_data = data.get("Retrieval")
+    # generation_data = data.get("Generation")
+    # config = payload.get("config")
+
+
+    main_graph = create_main_graph()
+    response = await main_graph.ainvoke(payload)
     retrieval_evaluation_result = response.get("retriever_evaluation_result")
     generator_evaluation_result = response.get("generator_evaluation_result")
     print(retrieval_evaluation_result, generator_evaluation_result)
@@ -64,4 +68,4 @@ async def evaluator(payload: EvaluationRequest):
 
 
 if __name__ == '__main__':
-    asyncio.run(evaluator(""))
+    asyncio.run(evaluator(payload=payload))
