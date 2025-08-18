@@ -182,8 +182,12 @@ dependencies = [
     "yarl==1.20.1",
     "zlib-state==0.1.9",
     "zstandard==0.23.0",
-    "krag",
+    "metrics",
+    "graphs",
+    "utils"
 ]
 
 [tool.uv.sources]
-krag = { path = "metrics/krag", editable = true }
+metrics = { path = "metrics", editable = true }
+graphs = { path = "graphs", editable = true }
+utils = { path = "utils", editable = true}

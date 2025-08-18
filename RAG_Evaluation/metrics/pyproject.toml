@@ -1,0 +1,10 @@
+[project]
+name = "metrics"
+version = "0.1.0"
+description = "Metrics for RAG Evaluation"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]

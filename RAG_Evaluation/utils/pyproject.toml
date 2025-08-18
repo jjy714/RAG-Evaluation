@@ -1,0 +1,10 @@
+[project]
+name = "utils"
+version = "0.1.0"
+description = "util functions for RAG Evaluation"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -2,7 +2,7 @@
 from langgraph.graph import StateGraph
 from typing_extensions import TypedDict, List, Dict, Optional
 from datasets import Dataset
-from metrics import GenerationEvaluator
+from metrics.Generation import GenerationEvaluator
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
 import numpy as np
 from time import sleep

@@ -4,7 +4,7 @@ from typing import Union, List, Dict, Optional
 from enum import Enum
 import math
 from functools import lru_cache
-from krag.document import KragDocument as Document
+from .document import KragDocument as Document
 from korouge_score import rouge_scorer
 from kiwipiepy import Kiwi
 import numpy as np

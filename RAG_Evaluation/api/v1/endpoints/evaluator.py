@@ -7,11 +7,11 @@ import asyncio
 # from schema import EvaluationSchema, EvaluationRequest
 from uuid import uuid4
 from fastapi import APIRouter, HTTPException
-
+import os 
 router = APIRouter
 
-PATH = Path(".").resolve() / "data"
-EXAMPLE_DATASET = PATH / "response_merged_output.csv"
+PATH = "/Users/jason/Claion/RAG/RAG_Evaluation/RAG_Evaluation/data"
+EXAMPLE_DATASET = os.path.join(PATH, "response_merged_output.csv")
 
 
 """
@@ -50,7 +50,7 @@ payload = {
         }
 
 
-@router.post("/evaluate", response_model=EvaluationStartResponse, status_code=202)
+# @router.post("/evaluate", response_model=EvaluationStartResponse, status_code=202)
 async def evaluator(payload):
     # data = payload.get("dataset")
     # retrieval_data = data.get("Retrieval")

@@ -1,5 +1,5 @@
 from langchain_core.documents  import Document
-from krag.evaluators import OfflineRetrievalEvaluators
+from ..krag.evaluators import OfflineRetrievalEvaluators
 from .context_relevance import context_relevance
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
 # from .MRR import map 
