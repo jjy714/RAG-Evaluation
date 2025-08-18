@@ -2,7 +2,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
 from fastapi import File, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from schema import EvaluationRequest, EvaluationStartResponse, EvaluationStatusResponse
+# from schema import EvaluationRequest, EvaluationStartResponse, EvaluationStatusResponse
 from api.v1.endpoints.evaluator import evaluator
 import uuid
 import asyncio
@@ -16,49 +16,49 @@ app = FastAPI(
     description="An API to run RAG evaluation pipelines built with LangGraph.",
     version="1.0.0",
 )
-app.include_router(api_router, prefix="/api/v1")
+app.include_router(api_router, prefix="/v1")
 
 # --- In-memory storage for evaluation status and results ---
 evaluations = {}
 
 # --- Background Task for Evaluation ---
 
-async def run_evaluation(evaluation_id: str, request: EvaluationRequest):
-    """
-    Run an evaluation in the background.
-    """
-    evaluations[evaluation_id]["status"] = "running"
-    print(f"--- Starting Evaluation {evaluation_id} ---")
-    result = dict()
-    try:
-        # Create the main evaluation graph
-        main_graph = create_main_graph()
+# async def run_evaluation(evaluation_id: str, request: EvaluationRequest):
+#     """
+#     Run an evaluation in the background.
+#     """
+#     evaluations[evaluation_id]["status"] = "running"
+#     print(f"--- Starting Evaluation {evaluation_id} ---")
+#     result = dict()
+#     try:
+#         # Create the main evaluation graph
+#         main_graph = create_main_graph()
 
-        # The input for the graph must match the EvaluationState TypedDict
-        initial_state: EvaluationState = {
-            "evaluation_mode": request.evaluation_mode,
-            "retrieve_metrics": request.retrieve_metrics,
-            "generate_metrics": request.generate_metrics,
-            "dataset": request.dataset.dict(),
-            "retriever_evaluation_result": None,
-            "generator_evaluation_result": None,
-        }
+#         # The input for the graph must match the EvaluationState TypedDict
+#         initial_state: EvaluationState = {
+#             "evaluation_mode": request.evaluation_mode,
+#             "retrieve_metrics": request.retrieve_metrics,
+#             "generate_metrics": request.generate_metrics,
+#             "dataset": request.dataset.dict(),
+#             "retriever_evaluation_result": None,
+#             "generator_evaluation_result": None,
+#         }
 
-        print(f"Invoking graph with mode: {request.evaluation_mode}")
+#         print(f"Invoking graph with mode: {request.evaluation_mode}")
         
-        # Asynchronously invoke the graph with the state
-        result["retriever_evaluation_result"], result["generator_evaluation_result"] = await evaluator(initial_state)
-        print(f"--- Graph Execution Finished for {evaluation_id} ---")
+#         # Asynchronously invoke the graph with the state
+#         result["retriever_evaluation_result"], result["generator_evaluation_result"] = await evaluator(initial_state)
+#         print(f"--- Graph Execution Finished for {evaluation_id} ---")
 
 
-        evaluations[evaluation_id]["status"] = "completed"
-        evaluations[evaluation_id]["result"] = result
+#         evaluations[evaluation_id]["status"] = "completed"
+#         evaluations[evaluation_id]["result"] = result
 
-    except Exception as e:
-        print(f"--- Evaluation {evaluation_id} Failed ---")
-        print(e)
-        evaluations[evaluation_id]["status"] = "failed"
-        evaluations[evaluation_id]["result"] = {"error": str(e)}
+#     except Exception as e:
+#         print(f"--- Evaluation {evaluation_id} Failed ---")
+#         print(e)
+#         evaluations[evaluation_id]["status"] = "failed"
+#         evaluations[evaluation_id]["result"] = {"error": str(e)}
 
 # @TODO
 """

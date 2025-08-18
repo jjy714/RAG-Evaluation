@@ -184,7 +184,9 @@ dependencies = [
     "zstandard==0.23.0",
     "metrics",
     "graphs",
-    "utils"
+    "utils",
+    "python-multipart>=0.0.20",
+    "aiofiles>=24.1.0",
 ]
 
 [tool.uv.sources]
