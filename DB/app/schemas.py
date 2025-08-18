@@ -1,22 +1,26 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
-from uuid import UUID
-from typing import Any, List
+from typing import Any, Optional
+from pydantic_mongo import PydanticObjectId
 
 class SessionBase(BaseModel):
-    rag_config: dict[str, Any] | None = None
+    rag_config: Optional[dict[str, Any]] = None
 
 class SessionCreate(SessionBase):
-    user_id: int
+    user_id: PydanticObjectId
 
 class Session(SessionBase):
-    session_id: UUID
-    user_id: int
+    id: PydanticObjectId = Field(alias="_id")
+    user_id: PydanticObjectId
     start_time: datetime
-    end_time: datetime | None = None
+    end_time: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {
+            PydanticObjectId: str
+        }
 
 class UserBase(BaseModel):
     username: str
@@ -26,14 +30,17 @@ class UserCreate(UserBase):
     password: str
 
 class User(UserBase):
-    id: int
+    id: PydanticObjectId = Field(alias="_id")
     role: str
     time_created: datetime
-    time_updated: datetime | None = None
-    sessions: list[Session] = []
+    time_updated: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {
+            PydanticObjectId: str
+        }
 
 class UserRoleUpdate(BaseModel):
     role: str

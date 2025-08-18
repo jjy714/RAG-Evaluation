@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pymongo.database import Database
 
-from .. import crud, models, auth
-from ..database import db # database.py에서 설정한 db 객체 가져오기
+from ... import crud, models, auth
+from ...database import db # database.py에서 설정한 db 객체 가져오기
 
 router = APIRouter()
 

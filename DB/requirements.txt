@@ -1,4 +1,7 @@
 fastapi
 uvicorn[standard]
-sqlalchemy
-psycopg2-binary
+pymongo
+pydantic-mongo
+python-jose[cryptography]
+bcrypt
+python-multipart
