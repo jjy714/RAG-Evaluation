@@ -5,9 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "datasets>=4.0.0",
     "fastapi>=0.116.1",
+    "jupyter>=1.1.1",
+    "locust>=2.38.1",
+    "pandas>=2.3.1",
     "passlib[bcrypt]>=1.7.4",
+    "psycopg2-binary>=2.9.10",
     "pymongo>=4.13.2",
     "python-jose[cryptography]>=3.5.0",
-    "uvicorn>=0.35.0",
+    "python-multipart>=0.0.20",
+    "transformers>=4.55.2",
+    "uvicorn[standard]>=0.35.0",
 ]

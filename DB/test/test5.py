@@ -1,26 +1,44 @@
-
+import time
 from pymongo import MongoClient
 
-# MongoDB 서버에 연결 (기본 포트: 27017)
-# client = MongoClient('mongodb://localhost:27017/') 와 동일합니다.
-client = MongoClient('localhost', 27017)
+def mongo_test():
+    """Connects to MongoDB and inserts a test document."""
+    client = None
+    try:
+        print("Attempting to connect to MongoDB...")
+        client = MongoClient(
+            host='mongodb://localhost:9017/',
+            username='root',
+            password='changeme',
+            serverSelectionTimeoutMS=5000  # Set a timeout for the connection
+        )
+        # The ismaster command is cheap and does not require auth.
+        client.admin.command('ismaster')
+        print("MongoDB connection successful.")
 
-# 'mydatabase'라는 이름의 데이터베이스에 연결합니다.
-# 만약 'mydatabase'가 존재하지 않으면, 첫 데이터가 추가될 때 자동으로 생성됩니다.
-db = client['mydatabase']
+        db = client.testdb
+        datasets_collection = db.test_collection
+        print(f"Using database 'testdb' and collection 'test_collection'.")
 
-# 'users'라는 이름의 컬렉션에 연결합니다.
-# 컬렉션도 마찬가지로 첫 데이터 추가 시 자동 생성됩니다.
-collection = db['users']
+        test_document = {
+            'upload_id': f'upload_test_{time.time()}',
+            'user_id': 'user_test',
+            'filename': 'test.txt',
+            'data': b'test data',
+            'upload_timestamp': time.time()
+        }
 
+        print("Attempting to insert a test document...")
+        datasets_collection.insert_one(test_document)
+        print("Test document inserted successfully.")
+        return "Success"
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return "Failed"
+    finally:
+        if client:
+            client.close()
+            print("MongoDB connection closed.")
 
-# 이름이 'Alice'인 사용자의 도시를 'Seoul'로 변경
-# $set 연산자는 특정 필드의 값을 변경합니다.
-collection.update_one(
-    {'name': 'Alice'},
-    {'$set': {'city': 'Seoul', 'status': 'active'}}
-)
-
-# 수정 결과 확인
-updated_user = collection.find_one({'name': 'Alice'})
-print(f"\n수정된 사용자 정보: {updated_user}")
+if __name__ == "__main__":
+    mongo_test()

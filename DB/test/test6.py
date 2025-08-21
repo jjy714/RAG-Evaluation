@@ -3,7 +3,7 @@ import os
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from pymongo import MongoClient
-
+import pandas as pd
 
 # --- Configuration ---
 # IMPORTANT: Use 'localhost' if running this script from your host machine.
@@ -18,7 +18,7 @@ POSTGRES_URI = f"dbname='testdb' user='testuser' password='testpassword' host='{
 NUM_THREADS = 50
 WRITES_PER_THREAD = 1000
 TOTAL_WRITES = NUM_THREADS * WRITES_PER_THREAD
-
+NUM_USERS = 50 # Each thread will simulate one user uploading the dataset
 # --- Worker Functions (These remain synchronous and blocking) ---
 
 def mongo_worker(worker_id):
@@ -37,21 +37,22 @@ def mongo_worker(worker_id):
         )   
 
         db = client.testdb
-        logs = db.logs
-
-        documents_to_insert = []
-        for i in range(WRITES_PER_THREAD):
-            doc = {
-                'worker_id': worker_id,
-                'message': f'Log entry {i} from worker {worker_id}',
-                'timestamp': time.time()
-            }
-            documents_to_insert.append(doc)
-
-        logs.insert_many(documents_to_insert)
-        return f"Worker {worker_id} finished."
+        dataset_collection = db.dataset_collection
+        
+        csv_file_path = './response_merged_output.csv' # Replace with your CSV file path
+        df = pd.read_csv(csv_file_path)
+        data = df.to_dict(orient='records') # Convert DataFrame to a list of dictionaries
+        dataset_document = {
+            'upload_id': f'upload_{worker_id}_{time.time()}',
+            'user_id': f'user_{worker_id}',
+            'filename': os.path.basename(csv_file_path),
+            'data': data,
+            'upload_timestamp': time.time()
+        }
+        dataset_collection.insert_one(dataset_document)
+        return f"Mongo Worker {worker_id}: Uploaded {len(dataset_document)} records."
     except Exception as e:
-        return f"Worker {worker_id} failed: {e}"
+        return f"Mongo Worker {worker_id} failed: {e}"
     finally:
         if client:
             client.close()
@@ -94,39 +95,42 @@ def mongo_worker(worker_id):
 
 # --- Async Execution Logic ---
 
-async def run_test(target_function, db_name):
+async def run_test(target_function, db_name, csv_path='./response_merged_output.csv'):
     """
     Uses asyncio to run the synchronous worker function in a thread pool.
     """
-    print(f"\n--- Starting Async Stress Test for {db_name} ---")
-    print(f"Threads: {NUM_THREADS}, Writes per Thread: {WRITES_PER_THREAD}, Total Writes: {TOTAL_WRITES}")
+    if not os.path.exists(csv_path):
+        print(f"Error: Dataset file not found at '{csv_path}'. Please update the YOUR_CSV_PATH variable.")
+        return
+
+    print(f"\n--- Starting Dataset Upload Stress Test for {db_name} ---")
+    print(f"Concurrent Users (Threads): {NUM_USERS}")
     
     start_time = time.time()
     
     loop = asyncio.get_running_loop()
     
-    # We explicitly create a ThreadPoolExecutor to run our blocking functions
-    with ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
+    with ThreadPoolExecutor(max_workers=NUM_USERS) as executor:
         # Create a list of asyncio tasks, each running a worker in the executor
         tasks = [
             loop.run_in_executor(executor, target_function, i)
-            for i in range(NUM_THREADS)
+            for i in range(NUM_USERS)
         ]
-        
-        # await asyncio.gather to wait for all tasks to complete
+
         results = await asyncio.gather(*tasks)
         
-        # You can optionally process results here
+        # Optionally print results for debugging
         for result in results:
             print(result)
 
     end_time = time.time()
     duration = end_time - start_time
-    writes_per_second = TOTAL_WRITES / duration
+    uploads_per_second = NUM_USERS / duration
 
     print(f"--- Test for {db_name} Finished ---")
-    print(f"Total time: {duration:.2f} seconds")
-    print(f"Writes per second: {writes_per_second:.2f}")
+    print(f"Total time to upload {NUM_USERS} datasets: {duration:.2f} seconds")
+    print(f"Uploads per second: {uploads_per_second:.2f}")
+
 
 async def main():
     """Main async function to run the tests sequentially."""
