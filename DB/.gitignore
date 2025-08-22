@@ -7,7 +7,7 @@ test
 test/*
 
 
-
+*.env
 *.venv
 
 code_x_glue_tc_nl_code_search_adv/

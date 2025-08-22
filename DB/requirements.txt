@@ -1,7 +1,0 @@
-fastapi
-uvicorn[standard]
-pymongo
-pydantic-mongo
-python-jose[cryptography]
-bcrypt
-python-multipart
