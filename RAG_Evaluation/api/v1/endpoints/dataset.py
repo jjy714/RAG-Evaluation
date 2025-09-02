@@ -1,8 +1,11 @@
 from typing import Annotated
 import requests
+import httpx
 from fastapi import APIRouter, File, UploadFile
 import aiofiles
 from pathlib import Path
+
+
 router = APIRouter()
 
 data_path = str(Path(".").resolve())
@@ -13,6 +16,17 @@ async def write_file(file: UploadFile):
     async with aiofiles.open(f"{data_path}/test/{file.filename}", 'wb') as out_file:
         content = await file.read()  # async read
         await out_file.write(content)  # async write
+    
+    return {"status": f"{file.filename}"}
+
+
+@router.post("/dataset-create/custom")
+async def write_file(per_data: str):
+    """
+    Sends to LLM
+    Sends to VDB
+    """
+    response = await requests.post()
     
     return {"status": f"{file.filename}"}
 
