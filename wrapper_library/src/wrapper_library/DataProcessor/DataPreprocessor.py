@@ -172,6 +172,13 @@ class DataPreprocessor:
             row["pred_answer"] = result
         return benchmark_data
 
+
+
+
+########################################
+
+
+
     def receieve_rawdata(self):
         pass
 
@@ -185,6 +192,9 @@ class DataPreprocessor:
             
         return response
 
+
+
+########################################
 async def main():
 
     embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
