@@ -9,9 +9,10 @@ from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from fastapi import FastAPI, APIRouter
+import httpx 
 
-
-class ProblemSolver:
+class DataPreprocessor:
 
     def __init__(
         self, 
@@ -24,8 +25,13 @@ class ProblemSolver:
         self.embedding_model = embedding_model
         self.vector_store = InMemoryVectorStore(embedding=self.embedding_model)
         self.llm_model = llm_model
+        self.router = APIRouter()
+        self.router.add_api_route("/get-raw", self.receieve_rawdata, methods=["GET"])
         self.kwargs = kwargs
         
+        self.app = FastAPI()
+        self.app.include_router(self.router)
+
 
     def create_chain(self):
         def format_docs(docs: List[Document]) -> str:
@@ -166,6 +172,19 @@ class ProblemSolver:
             row["pred_answer"] = result
         return benchmark_data
 
+    def receieve_rawdata(self):
+        pass
+
+    def send_benchdata(self, eval_api: str, benchdata):
+        try:
+            response = httpx.post(benchdata)
+        except ConnectionError as ce: 
+            yield {"status" : "fail", "error" :  ce}
+        except TimeoutError as te: 
+            yield {"status" : "fail", "error" :  te}
+            
+        return response
+
 async def main():
 
     embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
@@ -175,7 +194,7 @@ async def main():
         base_url="http://localhost:8000/v1",
     )
 
-    solver = ProblemSolver(embedding_model=embeddings, llm_model=llm)
+    solver = DataPreprocessor(embedding_model=embeddings, llm_model=llm)
 
     sample_raw_data = [
         {

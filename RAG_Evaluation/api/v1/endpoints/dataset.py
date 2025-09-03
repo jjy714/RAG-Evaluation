@@ -4,11 +4,13 @@ import httpx
 from fastapi import APIRouter, File, UploadFile
 import aiofiles
 from pathlib import Path
-
+from data import DataPreprocessor
 
 router = APIRouter()
 
 data_path = str(Path(".").resolve())
+
+preprocessor = DataPreprocessor()
 
 @router.post("/dataset-create")
 async def write_file(file: UploadFile):

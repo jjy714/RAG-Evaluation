@@ -8,7 +8,20 @@ import httpx
 import json
 
 
+
+
 FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+"""
+@TODO
+
+1. Make the log function work
+1-1. log the api calls (POST, GET)
+1-2. log retrievals/generation's metadata
+1-3. log the user_info
+
+"""
+
 
 
 class Decorator:
@@ -36,7 +49,6 @@ class Decorator:
         # ----- PARAMS -----
         self.num_output = num_output
         self.eval_system_api = eval_system_api
-        
 
     # ----- logging func -----
     def log_task(self, func):
@@ -48,8 +60,11 @@ class Decorator:
                 self.logger.info(f"Finished task: '{func.__name__}' successfully.")
                 return result
             except Exception as e:
-                self.logger.error(f"Error in task '{func.__name__}': {e}", exc_info=True)
+                self.logger.error(
+                    f"Error in task '{func.__name__}': {e}", exc_info=True
+                )
                 raise
+
         return wrapper
 
     # ----- data creator -----
@@ -58,43 +73,51 @@ class Decorator:
         Takes the Raw dataset
             1. From UI
             2. From DB
-            
+
         Makes the Benchmark dataset
             1. Insert RAG Outputs
-            
-        response -> a single row of data 
-            ex) query, retrieval documents name, retrieval documents content, 
+
+        response -> a single row of data
+            ex) query, retrieval documents name, retrieval documents content,
                 target documents name, target documents content
-            ex2) query, retrieval documents name, retrieval documents content, 
+            ex2) query, retrieval documents name, retrieval documents content,
                 target answer
-        
+
         Sends to EVAL
-        
-        
+
+
         """
-        
+
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
-            print(f"\n[Data Sender]: Preparing to create data from '{func.__name__}'...")
+            print(
+                f"\n[Data Sender]: Preparing to create data from '{func.__name__}'..."
+            )
             asyncio.sleep(2)
             self.logger.info(f"Sending data from '{func.__name__}': {data_to_send}")
             async with httpx.AsyncClient() as client:
                 data_to_send = func(*args, **kwargs)
-                try: 
+                try:
                     response = await client.post(self.eval_system_api, data_to_send)
-                    response.raise_for_status() 
+                    response.raise_for_status()
                     yield {"status": "success", "data": response.json()}
 
-                except ConnectionError as ce: 
-                    self.logger.error(f"Network error on attempt for '{func.__name__}': {ce}")
-                    yield {"status": "error",  "message": str(ce)}
-                except Exception as e: 
-                    self.logger.error(f"An unexpected error occurred on attempt for '{func.__name__}': {e}", exc_info=True)
+                except ConnectionError as ce:
+                    self.logger.error(
+                        f"Network error on attempt for '{func.__name__}': {ce}"
+                    )
+                    yield {"status": "error", "message": str(ce)}
+                except Exception as e:
+                    self.logger.error(
+                        f"An unexpected error occurred on attempt for '{func.__name__}': {e}",
+                        exc_info=True,
+                    )
                     yield {"status": "error", "message": str(e)}
             print("[Data Sender]: Data sent successfully!")
             return data_to_send
+
         return wrapper
-    
+
     # ----- data post -----
     async def data_sender(self, func):
         @functools.wraps(func)
@@ -107,14 +130,12 @@ class Decorator:
             self.logger.info(f"Sending data from '{func.__name__}': {data_to_send}")
             print("[Data Sender]: Data sent successfully!")
             return data_to_send
+
         return wrapper
 
 
 # ----- INIT -----
-decorators = Decorator(
-    log_path="data_pipeline.log",
-    log_level="INFO"
-    )
+decorators = Decorator(log_path="data_pipeline.log", log_level="INFO")
 
 
 # ----- EXAMPLE -----
@@ -124,6 +145,7 @@ def process_document(doc_name: str):
     """Processes a document and returns structured data."""
     print(f"  (Inside function: Processing '{doc_name}')")
     return {"document": doc_name, "status": "processed", "pages": 15}
+
 
 processed_data = process_document("annual_report_2025.pdf")
 
