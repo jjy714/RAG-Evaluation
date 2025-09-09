@@ -121,7 +121,7 @@ class OfflineRetrievalEvaluators:
         result = {}
         micro_precision = 0
         macro_precisions = []
-
+        
         for actual_docs, predicted_docs in zip(self.actual_docs, self.predicted_docs):
             k_effective = min(k or len(predicted_docs), len(predicted_docs))
             relevant_count = sum(

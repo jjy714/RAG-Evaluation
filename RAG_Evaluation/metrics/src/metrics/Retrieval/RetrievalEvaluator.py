@@ -8,12 +8,30 @@ from langchain_openai import ChatOpenAI, AzureChatOpenAI
 # from .recall import recall, recall_as_llm
 # from .noise_sensitivity import noise_sensitivity
 # from .response_relevancy import response_relevancy
-from typing import Union, List, Dict, Optional
+from typing import Union, List, Dict, Optional, Any
 from enum import Enum
+import httpx
 import asyncio
 
 
 # from .accuracy 
+class ApiClient:
+    def __init__(self, endpoint: str):
+        self.endpoint = endpoint
+        # You might use a requests.Session() here for connection pooling
+        print(f"API Client initialized for endpoint: {self.endpoint}")
+
+    async def send_metric(self, payload: Dict[str, Any]):
+        """Sends a single metric data point to the dashboard API."""
+        # In a real implementation, you would use a library like requests or httpx
+        async with httpx.AsyncClient() as client:    
+            try:
+                response = client.post(self.endpoint, json=payload)
+                response.raise_for_status() # Raise an exception for bad status codes
+                print(f"Successfully sent metric: {payload['metric_name']}")
+            except client.RequestException as e:
+                print(f"Error sending metric to dashboard: {e}")
+        print(f"[API Call Simulation] Sending payload: {payload}")
 
 
 class AveragingMethod(Enum):
@@ -62,9 +80,11 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             )
     
     def map(self, k:int=5) -> Dict[str, float]:
+        
         return self.calculate_map(k=k).get("map")
     
     def precision(self, k:int=5) -> Dict[str, float]:
+        
         return self.calculate_precision(k=k).get("micro_precision"), self.calculate_precision(k=k).get("macro_precision")
     
     def recall(self, k:int=5) -> Dict[str, float]:

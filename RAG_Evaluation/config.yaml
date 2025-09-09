@@ -1,0 +1,14 @@
+default:
+  api_version: "v1"
+  UI_port: 3000
+  DB_port: 6333
+  EVAL_port: 8000
+  
+  
+development:
+  api_base_url: "https://localhost:${}"
+  api_key: "${DEV_API_KEY}"
+
+production:
+  api_base_url: "https://api.prod.example.com"
+  api_key: "${PROD_API_KEY}"
