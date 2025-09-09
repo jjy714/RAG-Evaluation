@@ -39,42 +39,36 @@ class DataReceiver:
     def _df_to_raw_samples(
         self,
         df: pd.DataFrame,
-        col_doc: str,
-        col_query: str,
-        ) -> List[Dict[str, Any]]:
+    ) -> List[Dict[str, Any]]:
         
-        if col_doc not in df.columns or col_query not in df.columns:
+        if df.empty:
             raise HTTPException(
                 status_code=400,
-                detail=f"column '{col_doc}' and '{col_query}가 data에 존재하지 않습니다.'. Columns={list(df.columns)}",
+                detail="DataFrame is empty.",
             )
 
         samples: List[Dict[str, Any]] = []
         for _, row in df.iterrows():
-            page_content = "" if pd.isna(row[col_doc]) else str(row[col_doc])
-            query = "" if pd.isna(row[col_query]) else str(row[col_query])
+            row_dict = {
+                col: ("" if pd.isna(row[col]) else str(row[col]))
+                for col in df.columns
+            }
+            samples.append(row_dict)
 
-            samples.append(
-                {
-                    "document": [Document(page_content=page_content)],
-                    "query": query,
-                }
-            )
         if not samples:
             raise HTTPException(status_code=400, detail="No valid rows in CSV.")
         return samples
 
 
+
     async def receive_rawdata_csv(
         self,
         content: bytes,
-        col_doc: str = "document",
-        col_query: str = "question",
         sep: Optional[str] = None,
         encoding: Optional[str] = None,
     ):
         df = self._load_csv_bytes(content, sep=sep, encoding=encoding)
-        samples = self._df_to_raw_samples(df, col_doc=col_doc, col_query=col_query)
+        samples = self._df_to_raw_samples(df)
         return {"samples": samples}
 
 

@@ -37,4 +37,4 @@ async def receieve_data(file: UploadFile = File(...)):
     
     return {"status": "ok", "data": preprocessed_data}
 # src
-# uvicorn app:app --reload --port 8000
+#  uv run uvicorn app:app --reload --port 8001
