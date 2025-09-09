@@ -3,7 +3,6 @@ from typing import List, Dict, Any, Optional
 import pandas as pd
 from io import BytesIO, StringIO
 from langchain_core.documents import Document
-import chardet  # pip install chardet
 
 
 class DataReceiver:
@@ -20,10 +19,16 @@ class DataReceiver:
             encoding: Optional[str] = None,
             **read_csv_kwargs
         ) -> pd.DataFrame:
-  
-        if encoding is None:
-            detect = chardet.detect(content) if content else {"encoding": None}
-            encoding = detect.get("encoding") or "utf-8"
+
+        try:
+            import chardet
+            if encoding is None:
+                detect = chardet.detect(content) if content else {"encoding": None}
+                encoding = detect.get("encoding") or "utf-8"
+        except ModuleNotFoundError as MFE:
+            print(MFE)
+            return
+            
 
         text = content.decode(encoding=encoding, errors="replace")
 

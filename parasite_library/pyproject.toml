@@ -1,5 +1,5 @@
 [project]
-name = "wrapper-library"
+name = "parasite_library"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -14,4 +14,6 @@ dependencies = [
     "pandas>=2.3.2",
     "python-multipart>=0.0.20",
     "uvicorn>=0.35.0",
+    "langchain-huggingface",
+    "chardet"
 ]

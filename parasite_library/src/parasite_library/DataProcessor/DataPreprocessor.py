@@ -1,4 +1,4 @@
-import httpx 
+import httpx
 import os
 import re
 import json
@@ -7,8 +7,9 @@ import asyncio
 import pandas as pd
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Optional
 from tqdm import tqdm
+from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -19,18 +20,16 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException
 from dotenv import load_dotenv
 
+
 from parasite_library.DataProcessor.RecieveData import DataReceiver
+
 load_dotenv()
 api_key = os.getenv("API_KEY")
 
+
 class DataPreprocessor:
-    def __init__(
-        self, 
-        embedding_model: Any, 
-        llm_model: Any, 
-        **kwargs
-        ):
-        
+    def __init__(self, embedding_model: Optional[Any | None], llm_model: Any, **kwargs):
+
         # SHOULD BE INTIATED PER COLLECTION
         self.embedding_model = embedding_model
         self.vector_store = InMemoryVectorStore(embedding=self.embedding_model)
@@ -41,23 +40,62 @@ class DataPreprocessor:
 
         self.kwargs = kwargs
 
-        
+    def create_chain(self):
+        def format_docs(docs: List[Document]) -> str:
+            return "\n\n".join(doc.page_content for doc in docs)
+
+        try:
+            retriever = self.vector_store.as_retriever(
+                search_type="similarity", search_kwargs={"k": self.kwargs.get("k", 5)}
+            )
+
+            script_dir = Path(__file__).parent.resolve()
+            prompt_path = script_dir / "KOR_PROMPT.txt"
+            template_string = prompt_path.read_text(encoding="utf-8")
+            prompt = ChatPromptTemplate.from_template(template_string)
+
+            rag_chain = (
+                {
+                    "context": itemgetter("context"),
+                    "question": itemgetter("question"),
+                    "n": itemgetter("n"),
+                }
+                # {
+                #     "context": retriever | format_docs,
+                #     "question": RunnablePassthrough(),
+                # }
+                | prompt
+                | self.llm_model
+                | StrOutputParser()
+            )
+
+            return rag_chain
+
+        except FileNotFoundError:
+            script_dir = Path(__file__).parent.resolve()
+            prompt_path = script_dir / "KOR_PROMPT.txt"
+            print(f"ERROR: Prompt file not found at {prompt_path}. Please create it.")
+            return None
+        except Exception as e:
+            print(f"An unexpected error occurred while creating the chain: {e}")
+            raise
+
     def _to_documents(self, texts: List[str]) -> List[Document]:
-        return [Document(page_content=text) for text in texts if text and text != "null"]
+        return [
+            Document(page_content=text) for text in texts if text and text != "null"
+        ]
 
     def chunker(self, docs: List[str]):
-        
-        chunk_overlap=self.kwargs.get('chunk_overlap', 50)
-        chunk_size=self.kwargs.get('chunk_size', 1000)
-        
+
+        chunk_overlap = self.kwargs.get("chunk_overlap", 5)
+        chunk_size = self.kwargs.get("chunk_size", 100)
+
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap
-            )
+            chunk_size=chunk_size, chunk_overlap=chunk_overlap
+        )
 
         splits = text_splitter.split_documents(self._to_documents(docs))
         return splits
-    
     def _serialize_docs(self, docs):
         if not docs:
             return []
@@ -72,7 +110,7 @@ class DataPreprocessor:
             else:
                 result.append(d)  # 이미 dict일 수도 있으니까 그대로 append
         return result
-        
+
     def add_documents(self, documents: List[Document]):
 
         if not documents:
@@ -80,7 +118,7 @@ class DataPreprocessor:
         return self.vector_store.add_documents(documents=documents)
 
     def search(self, query: str) -> List[Document]:
-        k=self.kwargs.get('k', 5)
+        k = self.kwargs.get("k", 5)
         return self.vector_store.similarity_search(query, k=k)
     
     def cleaning(self,raw_text, column_name): 
@@ -103,37 +141,35 @@ class DataPreprocessor:
         for _ in range(buffer_k):
             formatted_prompt = template_string.format(context=context, n=buffer_k)
 
-            synthetic_doc = await self.llm_model.ainvoke(
-                [
-                    {"role": "system", "content": formatted_prompt},
-                    {"role": "user", "content": "합성 문서를 작성해줘."}
-                ]
-            )
-            synthetic_doc = synthetic_doc.content
+        synthetic_doc = await self.llm_model.ainvoke(
+            [
+                SystemMessage(content=formatted_prompt),
+                HumanMessage(content="합성 문서를 작성해줘.")
+            ]
+        )
+        synthetic_doc = synthetic_doc.content
             synthetic_doc = self.cleaning(synthetic_doc, 'hard_negatives')
 
         return synthetic_doc
 
     async def create_retrieval_bench_data(self, raw_data: List):
         benchmark_data = []
-
-        for idx, row in tqdm(enumerate(raw_data)):
+        query = raw_data["query"]
+        documents = raw_data["documents"]
+        
+        for idx, (row_q, row_docs) in tqdm(enumerate(zip(query, documents))):
             per_data = {}
-            docs = []
-            question = row.get("question", "") #done
-            doc = row.get("document", []) # done
-            target_answer = row.get("target_answer", "")
-            target_file_name = row.get("target_file_name", "")
             # context = "\n\n".join([d.page_content for d in docs])
-            docs.append(str(doc))
-            per_data["question"] = question
-            per_data["target_file_name"] = target_file_name
-            per_data["idx"] = idx
-            per_data["target_answer"] = target_answer  #실제 정답
-            print('input doc: \n', doc)
-            per_data['synth_documents'] =  await self._generate_synthetic_data(doc) # List of Synth Docs
+            per_data["idx"] = idx + 1
+            per_data["query"] = row_q
+            context = "\n\n".join(row_docs)
+            context = context if len(context) < 10000 else context[:10000]
+            per_data["ans_doc"] = context
+            per_data["synth_documents"] = await self._generate_synthetic_data(context)  # List of Synth Docs
             
+            print(f"--- AT {idx + 1}, document length : {len(context)} ---")
             print("Adding Docs to the Vector Store")
+            copied_context = per_data["synth_documents"].copy()
             doc_lst = per_data["synth_documents"]
             print("Chunking")
             for doc in doc_lst:
@@ -189,7 +225,9 @@ class DataPreprocessor:
         if chain is None:
             raise ValueError("RAG chain 생성 실패")
         self.chain = chain
-
+        
+        benchmark_data = await self.create_retrieval_bench_data(raw_data) # query, idx, 정답텍스트(ans_doc), 정답(으로 간주되는) 임의 문서(synth_documents), 
+                                                                          # 예측된 검색 문서(retrieved_docs), 예측 정답 생성(pred_answer)
         print("----- Generating Answers -----")
         print(type(benchmark_data))
         search_kwargs=self.kwargs.get('k', 5)
@@ -201,7 +239,6 @@ class DataPreprocessor:
                 retrieved_contexts.append(retrieved_context)
             retrieved_contexts = '\n'.join(retrieved_contexts)
             result = await chain.ainvoke(
-
                 {
                     "context": retrieved_contexts, #str(row.get("document")), #done
                     "question": str(row.get("question")), # done
@@ -226,16 +263,16 @@ class DataPreprocessor:
     async def send_benchdata(self, eval_api: str, benchdata):
         try:
             async with httpx.AsyncClient(timeout=60) as client:
-                print('eval_api: ', eval_api)
-                response = await client.post(eval_api, json={"file": benchdata}) # httpx.post(benchdata)
+                print("eval_api: ", eval_api)
+                response = await client.post(
+                    eval_api, json={"file": benchdata}
+                )  # httpx.post(benchdata)
                 response.raise_for_status()
                 return {"response": response}
         except httpx.ConnectError as ce:
             return {"status": "fail", "error": str(ce)}
         except httpx.TimeoutException as te:
             return {"status": "fail", "error": str(te)}
-                
-
 
 
 ################main#######################
@@ -266,6 +303,7 @@ async def data_process(data):
 
     # 문서-쿼리 쌍에 대해, 사용자가 사용하고 있는 임베딩 모델 기반의 실제 검색된 문서, 생성된 결과가 짝 지어져야 함
 
+
 if __name__ == "__main__":
-    
+
     asyncio.run(data_process())
