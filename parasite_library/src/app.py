@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 import json
-from wrapper_library.DataProcessor.DataPreprocessor import data_process
+from parasite_library.DataProcessor.DataPreprocessor import data_process
 app = FastAPI() 
 
 

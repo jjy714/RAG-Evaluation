@@ -16,7 +16,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException
 from dotenv import load_dotenv
 
-from wrapper_library.DataProcessor.RecieveData import DataReceiver
+from parasite_library.DataProcessor.RecieveData import DataReceiver
 load_dotenv()
 api_key = os.getenv("API_KEY")
 
