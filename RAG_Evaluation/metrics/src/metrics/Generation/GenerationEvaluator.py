@@ -42,7 +42,7 @@ class GenerationEvaluator:
                 )
             print(f"EVALUATION MODEL AZURE")
         else:
-            self.model = ChatOpenAI(model="Qwen3-30B-A3B",base_url="http://localhost:8000/v1", api_key="token-123")
+            # self.model = ChatOpenAI(model="Qwen3-30B-A3B",base_url="http://localhost:8000/v1", api_key="token-123")
             print(f"EVALUATION MODEL NOT AZURE")
 
 
