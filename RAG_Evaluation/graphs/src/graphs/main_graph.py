@@ -37,10 +37,9 @@ async def evaluate_retrieval(state: EvaluationState) -> Dict:
     retrieve_subgraph = create_retrieval_subgraph(state["retrieve_metrics"])
 
     retrieval_input: RetrievalEvaluationState = {
-        # "user_input":  state["dataset"]["Retrieval"]["user_input"],
-        "user_input":  Optional[state["dataset"]["Generation"]["query"]],
+        "query":  Optional[state["dataset"]["Retrieval"]["query"]],
         "predicted_documents": state["dataset"]["Retrieval"]["predicted_documents"],
-        "actual_documents": state["dataset"]["Retrieval"]["actual_documents"],
+        "ground_truth_documents": state["dataset"]["Retrieval"]["ground_truth_documents"],
         "metrics_to_run": state["retrieve_metrics"],
         "model": state["dataset"]["Generation"]["model"],
         "k": state["dataset"]["Retrieval"]["k"],
@@ -57,10 +56,10 @@ async def evaluate_generation(state: EvaluationState) -> Dict:
     generate_subgraph = create_generation_subgraph(state["generate_metrics"])
     # print(f"[MAIN GRAPH] state['dataset']['Generation']['retrieved_contexts'] : {state['dataset']['Generation']['retrieved_contexts']}")
     generation_input: GeneratorEvaluationState = {
-        "user_input": state["dataset"]["Generation"]["query"], 
-        "reference": state["dataset"]["Generation"]["reference"], 
+        "query": state["dataset"]["Generation"]["query"], 
+        "ground_truth_answer": state["dataset"]["Generation"]["ground_truth_answer"], 
         "retrieved_contexts": state["dataset"]["Generation"]["retrieved_contexts"],
-        "response": state["dataset"]["Generation"]["response"],
+        "generated_answer": state["dataset"]["Generation"]["generated_answer"],
         "metrics_to_run": state["generate_metrics"],
         "model": state["dataset"]["Generation"]["model"]
     }

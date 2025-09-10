@@ -28,7 +28,7 @@ METRICS_LIST = ["mrr", "map", "f1", "ndcg", "context_relevance","precision", "re
 # We add an 'evaluator' field to hold the instance and 'metrics_to_run_copy' for the router.
 class RetrievalEvaluationState(TypedDict):
     # --- INPUTS ---
-    user_input: List[str]
+    query: List[str]
     predicted_documents: List[List[Document]]
     actual_documents: List[List[Document]]
     metrics_to_run: List[str]
@@ -61,9 +61,9 @@ def instantiate_evaluator_node(state: RetrievalEvaluationState) -> dict:
     """
     print("\n--- (1) Instantiating Evaluator ---")
     evaluator = RetrievalEvaluator(
-        user_input=state["user_input"],
-        actual_docs=state["actual_documents"],
-        predicted_docs=state["predicted_documents"],
+        query=state["query"],
+        actual_documents=state["actual_documents"],
+        predicted_documents=state["predicted_documents"],
         model=state["model"],
     )
     sleep(2)
