@@ -47,24 +47,24 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
 
     def __init__(
             self,
-            user_input: List[str],
-            actual_docs: List[List[Document]], 
-            predicted_docs: List[List[Document]],
+            query: List[str],
+            ground_truth_documents: List[List[Document]], 
+            predicted_documents: List[List[Document]],
             model: ChatOpenAI | AzureChatOpenAI,
             match_method: str = "text", 
             averaging_method: Union[str, AveragingMethod] = AveragingMethod.BOTH,
             matching_criteria: MatchingCriteria = MatchingCriteria.ALL
             ):
         super().__init__(
-            actual_docs, 
-            predicted_docs, 
-            match_method, 
-            averaging_method, 
-            matching_criteria
+            actual_docs=ground_truth_documents, 
+            predicted_docs=predicted_documents, 
+            match_method= match_method, 
+            averaging_method=averaging_method, 
+            matching_criteria=matching_criteria
         )
-        self.user_input = user_input
+        self.query = query
         self.model = model
-        self.predicted_docs = predicted_docs
+        self.predicted_docs = predicted_documents
         
     def f1(self, k:int=5) -> Dict[str, float]:
         return self.calculate_f1_score(k=k).get("micro_f1"), self.calculate_f1_score(k=k).get("macro_f1")
@@ -75,7 +75,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
     async def context_relevance(self) -> Dict[str, float]:
         return await context_relevance(
             llm=self.model,
-            user_input=self.user_input,
+            user_input=self.query,
             retrieved_contexts=self.predicted_docs
             )
     

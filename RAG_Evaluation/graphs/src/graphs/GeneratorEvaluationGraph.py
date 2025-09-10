@@ -7,20 +7,20 @@ from langchain_openai import ChatOpenAI, AzureChatOpenAI
 import numpy as np
 from time import sleep
 
-            # user_input: List[str],
-            # reference: List[List[Document]],
+            # query: List[str],
+            # ground_truth_answer: List[List[Document]],
             # retrieved_contexts: List[List[Document]],
-            # response: List[str],
+            # generated_answer: List[str],
             # model: str
             # ):
 
 METRICS_LIST=['rouge', 'bleu', 'faithfulness']
 
 class GeneratorEvaluationState(TypedDict):
-    user_input: Dataset | List 
-    reference: List
+    query: Dataset | List 
+    ground_truth_answer: List
     retrieved_contexts: List
-    response: List
+    generated_answer: List
     model: ChatOpenAI | AzureChatOpenAI | str
     
     evaluator: Optional[GenerationEvaluator]
@@ -38,10 +38,10 @@ def instantiate_evaluator_node(state: GeneratorEvaluationState) -> dict:
     """
     print("\n--- (1) Instantiating Evaluator ---")
     evaluator = GenerationEvaluator(
-        user_input=state["user_input"],
-        reference=state["reference"],
+        query=state["query"],
+        ground_truth_answer=state["ground_truth_answer"],
         retrieved_contexts=state["retrieved_contexts"],
-        response=state["response"],
+        generated_answer=state["generated_answer"],
         model=state["model"],
     )
     sleep(2)

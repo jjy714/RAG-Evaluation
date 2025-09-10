@@ -82,11 +82,15 @@ class EvaluationRequest(BaseModel):
 
 
 class RetrievalModel(BaseModel):
+    query: List[str] = Field(..., description="The input query or question.")
     predicted_documents: List[Document] = Field(
         ..., description="List of predicted document IDs."
     )
-    actual_documents: List[List[Document]] = Field(
+    ground_truth_documents: List[List[Document]] = Field(
         ..., description="List of ground truth document IDs."
+    )
+    model: str = Field(
+        ...,description="Identifier for the model used for generation (e.g., 'azure', 'openai').", default= None
     )
     k: int = Field(
         ..., description="The number of top documents considered for retrieval metrics.", default=5
@@ -95,11 +99,11 @@ class RetrievalModel(BaseModel):
 
 class GenerationModel(BaseModel):
     query: List[str] = Field(..., description="The input query or question.")
-    reference: List[List[Document|str]] = Field(..., description="The ground truth or reference answer.")
+    ground_truth_answer: List[List[Document|str]] = Field(..., description="The ground truth or reference answer.")
     retrieved_contexts: List[List[Document|str]] = Field(
         ..., description="The list of context strings passed to the generator."
     )
-    response: List[str] = Field(..., description="The generated response from the RAG model.")
+    generated_answer: List[str] = Field(..., description="The generated response from the RAG model.")
     model: str = Field(
         ...,description="Identifier for the model used for generation (e.g., 'azure', 'openai').", default= None
     )

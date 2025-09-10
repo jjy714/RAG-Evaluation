@@ -24,16 +24,16 @@ class GenerationEvaluator:
 
     def __init__(
             self,
-            user_input: List[str],
-            reference: List[List[Document | str ]],
+            query: List[str],
+            ground_truth_answer: List[List[Document | str ]],
             retrieved_contexts: List[List[Document | str]],
-            response: List[str],
+            generated_answer: List[str],
             model: str
             ):
-        self.user_input = user_input
-        self.reference = reference
+        self.query = query
+        self.ground_truth_answer = ground_truth_answer
         self.retrieved_contexts = retrieved_contexts
-        self.response = response
+        self.generated_answer = generated_answer
         if "azure" in model: # LLM-as-Judge Evaluator
             self.model = AzureChatOpenAI(
                 azure_deployment=AZURE_DEPLOYMENT_NAME,  # or your deployment
@@ -47,18 +47,24 @@ class GenerationEvaluator:
 
 
     async def bleu(self) -> Dict[str, float]:
-        return await bleu(self.response, self.reference)
+        return await bleu(
+            response=self.generated_answer, 
+            reference=self.ground_truth_answer
+            )
 
     async def rouge(self) -> Dict[str, float]:
-        return await rouge(self.response, self.reference)
+        return await rouge(
+            response=self.generated_answer, 
+            reference=self.ground_truth_answer
+            )
 
     async def faithfulness(self) -> Dict[str, float]:
         model = self.model
         # print(f"[GENERATION EVALUATOR CLASS] self.retrieved_contexts : {self.retrieved_contexts}")
         return await faithfulness(
             llm=model, 
-            user_input=self.user_input, 
-            response=self.response, 
+            user_input=self.query, 
+            response=self.generated_answer, 
             retrieved_contexts=self.retrieved_contexts
             )
 
