@@ -188,6 +188,8 @@ dependencies = [
     "python-multipart>=0.0.20",
     "aiofiles>=24.1.0",
     "pymongo>=4.14.1",
+    "pytest>=8.4.2",
+    "pytest-asyncio<0.23",
 ]
 
 [tool.uv.sources]

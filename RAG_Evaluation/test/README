@@ -1,0 +1,10 @@
+
+How to run the test.
+
+1. uv sync // because I installed the pytest related libraries
+
+2. go to the root dir // in which here is RAG_Evaluation/RAG_Evaluation
+
+3. open terminal and type "pytest". // The pytest command automatically searches for files names test_*.py ...
+
+END

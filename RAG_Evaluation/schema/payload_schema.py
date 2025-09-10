@@ -54,11 +54,11 @@ from fastapi import File
 
 # api/v1/configuration
 class RetrievalMetrics(BaseModel):
-    retrieval_metrics: Literal["mrr" "map", "f1", "ndcg", "precision", "recall"]
+    retrieval_metrics: List[Literal["mrr" "map", "f1", "ndcg", "precision", "recall"]]
 
 # api/v1/configuration
 class GenerationMetrics(BaseModel):
-    generation_metrics: Literal['bleu', 'rouge','faithfulness']
+    generation_metrics: List[Literal['bleu', 'rouge','faithfulness']]
 
 # api/v1/configuration
 class UserConfig(BaseModel):

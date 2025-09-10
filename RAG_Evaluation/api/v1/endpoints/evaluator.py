@@ -7,6 +7,9 @@ from fastapi import APIRouter, HTTPException
 import os
 # import asyncio
 
+## STEP 3. EVALUATE !!
+
+
 router = APIRouter()
 
 def to_document(chunks: RetrievalModel | GenerationModel) -> List[Document]:
@@ -65,7 +68,7 @@ def create_input_payload():
     return final_payload
 
 
-@router.post("/evaluate", status_code=202)
+@router.post("/", status_code=202)
 async def evaluator(evaluation_request: EvaluationRequest):
 
     if not (evaluation_request["session_id"] or evaluation_request["user_id"]):
