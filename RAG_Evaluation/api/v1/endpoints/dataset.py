@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from pymongo import MongoClient
-from schema import BenchmarkRequest, DataMetaData
+from schema import BenchmarkRequest
 from dotenv import load_dotenv
 from typing import List
 from langchain_core.documents import Document
-from SHARED_PROCESS import SHARED_PROCESS
+from ..SHARED_PROCESS import SHARED_PROCESS
 from pathlib import Path 
 import os
 
@@ -39,9 +39,11 @@ def get_benchmark_dataset(request: BenchmarkRequest):
         raise HTTPException(
             status_code=400, detail=f"Session ID {request.session_id} is invalid"
         )
-    
-    client = MongoClient(MONGO_URI, username=MONGO_INITDB_ROOT_USERNAME, password=MONGO_INITDB_ROOT_PASSWORD)
-    
+    try:
+        client = MongoClient(MONGO_URI, username=MONGO_INITDB_ROOT_USERNAME, password=MONGO_INITDB_ROOT_PASSWORD)
+    except ConnectionError as CE:
+        raise CE
+            
     
     ### Each User has their own DB.
     ### Each DB has multiple collections.

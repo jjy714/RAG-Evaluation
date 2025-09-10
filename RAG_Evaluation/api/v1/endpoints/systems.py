@@ -2,10 +2,7 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-
-
-
-@router.get("/systems/info")
+@router.get("/info")
 def get_system_info():
     """
     Retrieves metadata and graph information.

@@ -1,7 +1,7 @@
 from typing import List
 from schema import EvaluationRequest, GraphSchema, RetrievalModel, GenerationModel
 from langchain_core.documents import Document
-from SHARED_PROCESS import SHARED_PROCESS
+from ..SHARED_PROCESS import SHARED_PROCESS
 from graphs import create_main_graph
 from fastapi import APIRouter, HTTPException
 import os
