@@ -9,6 +9,19 @@ import logging
 
 
 
+
+"""
+@TODO 
+
+ADD A STEP BY STEP GRADUAL BATCHING ALGORITHM
+
+
+"""
+
+
+
+
+    
 METRICS_LIST = ["mrr", "map", "f1", "ndcg", "context_relevance","precision", "recall" ]
 
 # --- 2. Define the State for the Graph ---

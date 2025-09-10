@@ -1,46 +1,59 @@
-from typing import Annotated
-import requests
-import httpx
-from fastapi import APIRouter, File, UploadFile
-import aiofiles
-from pathlib import Path
-from data import DataPreprocessor
+from fastapi import APIRouter, HTTPException
+from pymongo import MongoClient
+from schema import BenchmarkRequest
+from dotenv import load_dotenv
+from SHARED_PROCESS import SHARED_PROCESS
+
+
+
+
 
 router = APIRouter()
 
-data_path = str(Path(".").resolve())
-
-preprocessor = DataPreprocessor()
-
-@router.post("/dataset-create")
-async def write_file(file: UploadFile):
-    print(data_path)
-    async with aiofiles.open(f"{data_path}/test/{file.filename}", 'wb') as out_file:
-        content = await file.read()  # async read
-        await out_file.write(content)  # async write
-    
-    return {"status": f"{file.filename}"}
+# --- Pydantic model for the request body ---
+# This ensures the incoming JSON has the correct structure.
 
 
-@router.post("/dataset-create/custom")
-async def write_file(per_data: str):
+# Helper function to convert MongoDB's ObjectId to a string
+def serialize_doc(doc):
+    # Make it more robust: only convert _id if it exists
+    if doc and "_id" in doc:
+        doc["_id"] = str(doc["_id"])
+    return doc
+
+# --- Corrected FastAPI Endpoint ---
+# Use a more descriptive name and path
+@router.post("/get-benchmark-dataset")
+def get_benchmark_dataset(request: BenchmarkRequest):
     """
-    Sends to LLM
-    Sends to VDB
+    Retrieves a specific benchmark dataset from the MongoDB collection by its name.
     """
-    response = await requests.post()
+    print(f"Searching for dataset with name: '{request.dataset_name}'")
     
-    return {"status": f"{file.filename}"}
+    if request.session_id not in SHARED_PROCESS:
+        assert not request.session_id
+        return HTTPException(
+            status_code=400,
+            detail=f"Session ID {request.session_id} is invalid"
+            )
+    client = MongoClient("mongodb://root:example_password@mongodb:27017/")
+    user_id = SHARED_PROCESS[request.session_id]["user_id"] + "_DB"
+    db = client.user_id
+    collection = db.benchmark_datasets
 
-@router.get("/from-main-db")
-async def get_file_from_main_db(file: Annotated[bytes, File()]):
+    benchmark_dataset = collection.find({"file_name": request.dataset_name})
     
-    response = requests.get("https://google.com")
-    return {"status": f"{file.title} !!"}
-
-
-
-
-@router.post("/upload-dataset")
-async def create_upload_file(file: UploadFile):
-    return {"filename": file.filename}
+    # 2. THE FIX: Add error handling for when the dataset is not found
+    if benchmark_dataset is None:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Dataset with name '{request.dataset_name}' not found."
+        )
+    
+    # 3. Serialize the single document before returning
+    serialized_dataset = serialize_doc(benchmark_dataset)
+    
+    SHARED_PROCESS[request.session_id]["benchmark_dataset"] = serialized_dataset
+    
+    # 4. THE FIX: Return the correct, serialized variable
+    return {"status" : "OK"}
