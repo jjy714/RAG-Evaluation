@@ -1,24 +1,18 @@
-from typing import Annotated
-import requests
-from fastapi import APIRouter, File, UploadFile
-import json
-import aiofiles
+from fastapi import APIRouter
 from pathlib import Path
+from pydantic import BaseModel
+from SHARED_PROCESS import SHARED_PROCESS
+from schema import UserConfig
+import uuid
+
 router = APIRouter()
 
 data_path = str(Path(".").resolve())
 
-@router.post("/create-config")
-async def write_config_file(file: json):
-    print(data_path)
-    
-    
-    async with aiofiles.open(f"{data_path}/test/{file.filename}", 'wb') as out_file:
-        content = await file.read()  # async read
-        await out_file.write(content)  # async write
-    
-    return {"status": f"{file.filename}"}
 
-@router.post("/upload-dataset")
-async def create_upload_file(file: UploadFile):
-    return {"filename": file.filename}
+@router.post("/config")
+async def store_config(config: UserConfig):
+    session_id = str(uuid.uuid4())
+    SHARED_PROCESS[session_id] = config 
+    
+    return {"session_id": session_id, "message": "Session Configuration set successfully."}

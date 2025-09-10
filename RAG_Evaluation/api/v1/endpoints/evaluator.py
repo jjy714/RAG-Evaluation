@@ -3,14 +3,14 @@ from graphs import create_main_graph
 from pathlib import Path
 from utils import dataprocess_retrieve, dataprocess_generate
 from typing import Annotated
-
+from SHARED_PROCESS import SHARED_PROCESS
 # import asyncio
 
 # from schema import EvaluationSchema, EvaluationRequest
 from uuid import uuid4
 from fastapi import APIRouter, HTTPException, File, UploadFile
 import os 
-import io 
+
 
 router = APIRouter()
 
@@ -24,7 +24,7 @@ GENERATED DATA: User Query, Reference Document, Answer Response, LLM Response
 """
 predicted_docs, actual_docs = dataprocess_retrieve(EXAMPLE_DATASET)
 query, reference, retrieved_contexts, _response = dataprocess_generate(EXAMPLE_DATASET)
-payload = {
+graph_input = {
             "retrieve_metrics": [
                 "mrr",
                 "map",
