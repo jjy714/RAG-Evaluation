@@ -90,10 +90,9 @@ class RetrievalModel(BaseModel):
         ..., description="List of ground truth document IDs."
     )
     model: str = Field(
-        ...,description="Identifier for the model used for generation (e.g., 'azure', 'openai').", default= None
-    )
+        ...,description="Identifier for the model used for generation (e.g., 'azure', 'openai').")
     k: int = Field(
-        ..., description="The number of top documents considered for retrieval metrics.", default=5
+        ..., description="The number of top documents considered for retrieval metrics."
     )
 
 
@@ -104,9 +103,7 @@ class GenerationModel(BaseModel):
         ..., description="The list of context strings passed to the generator."
     )
     generated_answer: List[str] = Field(..., description="The generated response from the RAG model.")
-    model: str = Field(
-        ...,description="Identifier for the model used for generation (e.g., 'azure', 'openai').", default= None
-    )
+    model: str | None = Field(description="Identifier for the model used for generation (e.g., 'azure', 'openai').")
 
 
 class DatasetModel(BaseModel):
