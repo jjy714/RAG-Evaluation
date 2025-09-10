@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from api.v1.endpoints import evaluator, systems, dataset
+from api.v1.endpoints import evaluator, systems, dataset, configuration
 
 
 api_router = APIRouter()
@@ -8,3 +8,4 @@ api_router = APIRouter()
 api_router.include_router(evaluator.router, prefix="/evaluate", tags=["evaluate"])
 api_router.include_router(dataset.router, prefix="/dataset", tags=["evaluate"])
 api_router.include_router(systems.router, prefix="/systems", tags=["systems"])
+api_router.include_router(configuration.router, prefix="/config", tags=["config"])

@@ -13,7 +13,7 @@ data_path = str(Path(".").resolve())
 ## STEP 1. CONFIG FIRST !!
 
 
-@router.post("/config")
+@router.post("")
 async def store_config(config: UserConfig):
     session_id = str(uuid.uuid4())
     SHARED_PROCESS[session_id]["config"] = config     

@@ -11,6 +11,7 @@ import os
 env_path = Path(".").parent.parent
 load_dotenv(env_path)
 
+## STEP 2. GET DATASET !!
 
 MONGO_PORT= os.getenv("MONGO_PORT")
 MONGO_URI = f"mongodb://localhost:{MONGO_PORT}/"
