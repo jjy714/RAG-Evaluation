@@ -1,4 +1,4 @@
-from core import read_data
+from app.core import read_data
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from concurrent.futures import ThreadPoolExecutor
 import traceback
@@ -7,8 +7,8 @@ import asyncio
 
 router = APIRouter()
 
-@router.get("/find/mongo/{file_name}")
-async def read_from_mongo(file_name: str):
+@router.get("{file_name}")
+async def read(file_name: str):
     executor = ThreadPoolExecutor(max_workers=10)
     try:
         loop = asyncio.get_running_loop()
