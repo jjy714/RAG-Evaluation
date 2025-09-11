@@ -1,0 +1,41 @@
+import redis
+import os
+from dotenv import load_dotenv
+from pathlib import Path
+import json
+# env_path = Path('.').parent.resolve()
+# print(env_path)
+load_dotenv()
+
+REDIS_PORT = os.getenv("REDIS_PORT")
+print(REDIS_PORT)
+
+
+def set_cache(session_id, input):
+    
+    
+    if not (
+        isinstance(input, bytes) or
+        isinstance(input, str) or
+        isinstance(input, int) or
+        isinstance(input, float)):
+        input = json.dumps(input)
+    
+    r = redis.Redis(
+        host='localhost',
+        port=int(REDIS_PORT),
+        decode_responses=True
+    )
+    try:
+        r.ping()
+        print("Connected to Redis!")
+    except redis.exceptions.ConnectionError as e:
+        print(f"Could not connect to Redis: {e}")
+    
+    
+    try: 
+        
+        r.set(session_id, input)
+        print(f"SET SUCCESS FOR {session_id}")
+    except Exception as e:
+        print(e)

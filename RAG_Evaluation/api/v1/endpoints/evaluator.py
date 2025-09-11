@@ -1,9 +1,10 @@
 from typing import List
 from schema import EvaluationRequest, GraphSchema, RetrievalModel, GenerationModel
 from langchain_core.documents import Document
-from ..SHARED_PROCESS import SHARED_PROCESS
+from cache_redis import set_cache, get_cache
 from graphs import create_main_graph
 from fastapi import APIRouter, HTTPException
+import json
 import os
 # import asyncio
 
@@ -12,7 +13,26 @@ import os
 
 router = APIRouter()
 
-def to_document(chunks: RetrievalModel | GenerationModel) -> List[Document]:
+
+def cleanse_data(data):
+    # data = [{}]
+    query = []
+    predicted_documents = []
+    ground_truth_documents = []
+    
+    ground_truth_answer=[]
+    retrieved_contexts=[]
+    generated_answer=[]
+    
+    for row in data.keys(): 
+        if row == "query":
+            query.append()
+
+    
+    
+    return 
+
+def to_document(chunks: List[List[str]]) -> List[Document]:
     return [
         Document(
             page_content=chunk["text"],
@@ -23,9 +43,18 @@ def to_document(chunks: RetrievalModel | GenerationModel) -> List[Document]:
     ]
     
     
-def create_input_payload():
-    config = SHARED_PROCESS["session_id"]["config"]
-    benchmark_dataset = SHARED_PROCESS["session_id"]["benchmark_dataset"]
+def create_input_payload(request):
+    
+    stored_session_json = get_cache(request.session_id)
+    if not stored_session_json:
+        raise HTTPException(status_code=404, detail="Session not found or has expired.")
+    session_data = json.loads(stored_session_json)
+    
+    config = session_data["config"]
+    benchmark_dataset = session_data["benchmark_dataset"]
+    
+    print(config)
+    print(benchmark_dataset)
     
     if not config or not benchmark_dataset:
         raise ValueError("Configuration or benchmark_dataset is missing.")
@@ -71,10 +100,9 @@ def create_input_payload():
 @router.post("/", status_code=202)
 async def evaluator(evaluation_request: EvaluationRequest):
 
-    if not (evaluation_request["session_id"] or evaluation_request["user_id"]):
-        raise HTTPException(status_code=404, detail="Evaluation request Invalid!")
-
-    graph_input = create_input_payload()
+    # if not (evaluation_request["session_id"] or evaluation_request["user_id"]):
+    #     raise HTTPException(status_code=404, detail="Evaluation request Invalid!")
+    graph_input = create_input_payload(evaluation_request)
 
     main_graph = create_main_graph()
     response = await main_graph.ainvoke(input=graph_input)
