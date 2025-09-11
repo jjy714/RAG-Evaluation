@@ -1,14 +1,14 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from concurrent.futures import ThreadPoolExecutor
-from core import insert_data
+from app.core import insert_data
 import traceback
 import time
 import asyncio
 
 router = APIRouter()
 
-@router.post("/upload/mongo")
-async def upload_to_mongo(file: UploadFile = File(...)):
+@router.post("")
+async def insert(user_id: str, file: UploadFile = File(...)):
     executor = ThreadPoolExecutor(max_workers=10)
     
     print(file)
@@ -17,7 +17,7 @@ async def upload_to_mongo(file: UploadFile = File(...)):
         loop = asyncio.get_running_loop()
         
         record_count = await loop.run_in_executor(
-            executor, insert_data, int(time.time()), file.filename, contents
+            executor, insert_data, user_id, file.filename, contents
         )
 
         return {"message": f"Successfully uploaded {file.filename} with {record_count} records to MongoDB."}
