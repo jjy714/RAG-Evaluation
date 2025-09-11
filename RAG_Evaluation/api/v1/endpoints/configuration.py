@@ -16,7 +16,8 @@ data_path = str(Path(".").resolve())
 @router.post("")
 async def store_config(config: UserConfig):
     session_id = str(uuid.uuid4())
-    SHARED_PROCESS[session_id]["config"] = config     
+    if session_id not in SHARED_PROCESS:
+        SHARED_PROCESS[session_id] = {}
     
     return {"session_id": session_id, "message": "Session Configuration set successfully."}
 

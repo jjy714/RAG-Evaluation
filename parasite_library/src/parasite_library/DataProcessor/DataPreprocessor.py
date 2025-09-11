@@ -41,29 +41,18 @@ class DataPreprocessor:
         self.kwargs = kwargs
 
     def create_chain(self):
-        def format_docs(docs: List[Document]) -> str:
-            return "\n\n".join(doc.page_content for doc in docs)
-
         try:
-            retriever = self.vector_store.as_retriever(
-                search_type="similarity", search_kwargs={"k": self.kwargs.get("k", 5)}
-            )
-
             script_dir = Path(__file__).parent.resolve()
-            prompt_path = script_dir / "KOR_PROMPT.txt"
+            prompt_path = script_dir / ".." /  "Prompts" / "KOR_GENERATE_ANS_PROMPT.txt"
             template_string = prompt_path.read_text(encoding="utf-8")
             prompt = ChatPromptTemplate.from_template(template_string)
 
             rag_chain = (
+
                 {
-                    "context": itemgetter("context"),
-                    "question": itemgetter("question"),
-                    "n": itemgetter("n"),
+                    'context': itemgetter('context'),
+                    'question': itemgetter('question'),
                 }
-                # {
-                #     "context": retriever | format_docs,
-                #     "question": RunnablePassthrough(),
-                # }
                 | prompt
                 | self.llm_model
                 | StrOutputParser()
@@ -73,18 +62,18 @@ class DataPreprocessor:
 
         except FileNotFoundError:
             script_dir = Path(__file__).parent.resolve()
-            prompt_path = script_dir / "KOR_PROMPT.txt"
+            prompt_path = script_dir / "KOR_GENERATE_ANS_PROMPT.txt"
             print(f"ERROR: Prompt file not found at {prompt_path}. Please create it.")
             return None
         except Exception as e:
             print(f"An unexpected error occurred while creating the chain: {e}")
             raise
-
+        
     def _to_documents(self, texts: List[str]) -> List[Document]:
         return [
             Document(page_content=text) for text in texts if text and text != "null"
         ]
-
+        
     def chunker(self, docs: List[str]):
 
         chunk_overlap = self.kwargs.get("chunk_overlap", 5)
@@ -96,6 +85,8 @@ class DataPreprocessor:
 
         splits = text_splitter.split_documents(self._to_documents(docs))
         return splits
+
+
     def _serialize_docs(self, docs):
         if not docs:
             return []
@@ -148,25 +139,36 @@ class DataPreprocessor:
             ]
         )
         synthetic_doc = synthetic_doc.content
-            synthetic_doc = self.cleaning(synthetic_doc, 'hard_negatives')
+        synthetic_doc = self.cleaning(synthetic_doc, 'hard_negatives')
 
         return synthetic_doc
 
     async def create_retrieval_bench_data(self, raw_data: List):
         benchmark_data = []
-        query = raw_data["query"]
-        documents = raw_data["documents"]
-        
-        for idx, (row_q, row_docs) in tqdm(enumerate(zip(query, documents))):
-            per_data = {}
+        for idx, row in tqdm(enumerate(raw_data)):
+
+            docs = []
+            row_q = row.get("question", "")
+            row_docs = row.get("document", [])
+            target_answer = row.get("target_answer", "")
+            target_file_name = row.get("target_file_name", "")
             # context = "\n\n".join([d.page_content for d in docs])
+            if type(row_docs) == List:
+                docs = row_docs
+            else:
+                docs.append(row_docs)
+
+
+            per_data = {}
             per_data["idx"] = idx + 1
-            per_data["query"] = row_q
-            context = "\n\n".join(row_docs)
+            per_data["question"] = row_q
+            context = "\n\n".join(row_docs) if type(row_docs) == List else row_docs
             context = context if len(context) < 10000 else context[:10000]
             per_data["ans_doc"] = context
+            per_data["target_answer"] = target_answer
+            per_data['target_file_name'] = target_file_name
+            per_data["response"] = context
             per_data["synth_documents"] = await self._generate_synthetic_data(context)  # List of Synth Docs
-            
             print(f"--- AT {idx + 1}, document length : {len(context)} ---")
             print("Adding Docs to the Vector Store")
             copied_context = per_data["synth_documents"].copy()
@@ -185,42 +187,11 @@ class DataPreprocessor:
             for k in range(search_kwargs):
                 row[f"retrieved_doc{k+1}"] = search_out[k]
             
-        print('benchmark_data: ', benchmark_data)
         return benchmark_data
 
 
 
-    def create_chain(self):
-        try:
-            script_dir = Path(__file__).parent.resolve()
-            prompt_path = script_dir / ".." /  "Prompts" / "KOR_GENERATE_ANS_PROMPT.txt"
-            template_string = prompt_path.read_text(encoding="utf-8")
-            prompt = ChatPromptTemplate.from_template(template_string)
-
-            rag_chain = (
-
-                {
-                    'context': itemgetter('context'),
-                    'question': itemgetter('question'),
-                }
-                | prompt
-                | self.llm_model
-                | StrOutputParser()
-            )
-
-            return rag_chain
-
-        except FileNotFoundError:
-            script_dir = Path(__file__).parent.resolve()
-            prompt_path = script_dir / "KOR_GENERATE_ANS_PROMPT.txt"
-            print(f"ERROR: Prompt file not found at {prompt_path}. Please create it.")
-            return None
-        except Exception as e:
-            print(f"An unexpected error occurred while creating the chain: {e}")
-            raise
-        
-
-    async def create_generation_bench_data(self, benchmark_data: List):
+    async def create_generation_bench_data(self, raw_data: List):
         chain = self.create_chain()
         if chain is None:
             raise ValueError("RAG chain 생성 실패")
@@ -229,7 +200,6 @@ class DataPreprocessor:
         benchmark_data = await self.create_retrieval_bench_data(raw_data) # query, idx, 정답텍스트(ans_doc), 정답(으로 간주되는) 임의 문서(synth_documents), 
                                                                           # 예측된 검색 문서(retrieved_docs), 예측 정답 생성(pred_answer)
         print("----- Generating Answers -----")
-        print(type(benchmark_data))
         search_kwargs=self.kwargs.get('k', 5)
         for row in tqdm(benchmark_data):
             retrieved_contexts = []
@@ -253,22 +223,24 @@ class DataPreprocessor:
             if "retrieved_doc" in col or 'document' in col:
                 bench_df[col] = bench_df[col].apply(lambda x: self._serialize_docs(x))
 
-        save_path = '/home/minjichoi/RAG-Evaluation/RAG_Evaluation/data/bench_preprocessed.csv'
+        save_path = '/home/minjichoi/RAG-Evaluation/RAG_Evaluation/test/bench_preprocessed.csv'
         bench_df.to_csv(save_path, index=False)
-        print(f'### result \n{bench_df} ')
-        return save_path
+        response = save_path.split('/')[-1].strip()
+
+        return response
 
 #############################  
 
-    async def send_benchdata(self, eval_api: str, benchdata):
+    async def send_benchdata(self, eval_api: str):
         try:
             async with httpx.AsyncClient(timeout=60) as client:
-                print("eval_api: ", eval_api)
-                response = await client.post(
-                    eval_api, json={"file": benchdata}
-                )  # httpx.post(benchdata)
+                response = await client.post(eval_api)
                 response.raise_for_status()
-                return {"response": response}
+                return {
+                    "status": "success",
+                    "status_code": response.status_code,
+                    "content": response.json() if response.headers.get("content-type") == "application/json" else response.text
+                }
         except httpx.ConnectError as ce:
             return {"status": "fail", "error": str(ce)}
         except httpx.TimeoutException as te:
@@ -295,11 +267,10 @@ async def data_process(data):
     sample_raw_data = sample_raw_data[:1 ]
 
     print("Generating synthetic data...")
-    benchmark_data = await solver.create_retrieval_bench_data(sample_raw_data)
-    benchmark_data_result_path = await solver.create_generation_bench_data(benchmark_data)
+    benchmark_data_result_path = await solver.create_generation_bench_data(sample_raw_data)
     print("Generation complete.")
-    
-    return await solver.send_benchdata(eval_api='http://localhost:8000/v1/evaluate/evaluate', benchdata=benchmark_data_result_path)
+    print('benchmark_data_result_path: ', benchmark_data_result_path)
+    return await solver.send_benchdata(eval_api=f'http://localhost:8000/v1/evaluate/?file={benchmark_data_result_path}')
 
     # 문서-쿼리 쌍에 대해, 사용자가 사용하고 있는 임베딩 모델 기반의 실제 검색된 문서, 생성된 결과가 짝 지어져야 함
 
