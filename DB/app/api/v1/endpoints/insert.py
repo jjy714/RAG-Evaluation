@@ -8,7 +8,7 @@ import asyncio
 router = APIRouter()
 
 @router.post("")
-async def insert(file: UploadFile = File(...)):
+async def insert(user_id: str, file: UploadFile = File(...)):
     executor = ThreadPoolExecutor(max_workers=10)
     
     print(file)
@@ -17,7 +17,7 @@ async def insert(file: UploadFile = File(...)):
         loop = asyncio.get_running_loop()
         
         record_count = await loop.run_in_executor(
-            executor, insert_data, int(time.time()), file.filename, contents
+            executor, insert_data, user_id, file.filename, contents
         )
 
         return {"message": f"Successfully uploaded {file.filename} with {record_count} records to MongoDB."}

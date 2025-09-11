@@ -15,7 +15,6 @@ MONGO_INITDB_ROOT_PASSWORD = os.getenv("MONGO_INITDB_ROOT_PASSWORD")
 
 
 def create_db(user_id: str):
-
     client = MongoClient(
         host="mongodb://localhost",
         port=9017,
