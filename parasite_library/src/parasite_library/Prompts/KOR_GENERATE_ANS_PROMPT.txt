@@ -4,7 +4,7 @@
 {context}
 
 **Question:**
-{question}
+{query}
 
 **출력 형식:**
 "result"라는 단일 키를 가진 JSON 객체로 응답하십시오. 이 키의 값은 1개의의 문자열입니다.

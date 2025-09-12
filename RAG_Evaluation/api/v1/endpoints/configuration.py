@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from api.v1.SHARED_PROCESS import SHARED_PROCESS
 from schema import UserConfig
 from cache_redis import set_cache
 import uuid
