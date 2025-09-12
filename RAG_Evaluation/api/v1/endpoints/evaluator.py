@@ -26,8 +26,7 @@ def cleanse_data(data):
     
     for row in data.keys(): 
         if row == "query":
-            query.append()
-
+            query.append(data[row])
     
     
     return 
