@@ -15,9 +15,7 @@ router = APIRouter()
 def store_config(config: UserConfig):
     print(config)
     session_id = str(uuid.uuid4())
-    if session_id not in SHARED_PROCESS:
-        SHARED_PROCESS[session_id] = {}
-    
+
     json_config = UserConfig.model_dump(config)
     json_config = json.dumps(json_config)
     
