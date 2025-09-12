@@ -1,26 +1,28 @@
 from fastapi import APIRouter
-from pathlib import Path
-from pydantic import BaseModel
-from SHARED_PROCESS import SHARED_PROCESS
+from api.v1.SHARED_PROCESS import SHARED_PROCESS
 from schema import UserConfig
+from cache_redis import set_cache
 import uuid
+import json
 
 router = APIRouter()
-
-data_path = str(Path(".").resolve())
 
 
 ## STEP 1. CONFIG FIRST !!
 
 
 @router.post("")
-async def store_config(config: UserConfig):
+def store_config(config: UserConfig):
+    print(config)
     session_id = str(uuid.uuid4())
-    if session_id not in SHARED_PROCESS:
-        SHARED_PROCESS[session_id] = {}
+
+    json_config = UserConfig.model_dump(config)
+    json_config = json.dumps(json_config)
     
+    session_data = {
+        "config": json_config, # Store config as a dictionary
+        "benchmark_dataset": None      # Add a placeholder for the dataset
+    }
+    
+    set_cache(session_id=session_id, input=session_data)
     return {"session_id": session_id, "message": "Session Configuration set successfully."}
-
-
-
-

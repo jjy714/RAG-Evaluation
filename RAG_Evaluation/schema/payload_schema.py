@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal, Dict, Any
 from langchain_core.documents import Document
 from fastapi import File
+
 # --- Pydantic Models for API Data Structure ---
 """
   Args: 
@@ -52,22 +53,26 @@ from fastapi import File
     
 """
 
+
 # api/v1/configuration
 class RetrievalMetrics(BaseModel):
-    retrieval_metrics: List[Literal["mrr" "map", "f1", "ndcg", "precision", "recall"]]
+    retrieval_metrics: List[Literal["mrr", "map", "f1", "ndcg", "precision", "recall"]]
+
 
 # api/v1/configuration
 class GenerationMetrics(BaseModel):
-    generation_metrics: List[Literal['bleu', 'rouge','faithfulness']]
+    generation_metrics: List[Literal["bleu", "rouge", "faithfulness"]]
+
 
 # api/v1/configuration
 class UserConfig(BaseModel):
     user_id: str
-    retrieval_metrics: RetrievalMetrics
-    generation_metrics: GenerationMetrics
+    retrieval_metrics: List[Literal["mrr", "map", "f1", "ndcg", "precision", "recall"]]
+    generation_metrics: List[Literal["bleu", "rouge", "faithfulness"]]
     top_k: int = 5
-    model: str | None
+    model: Optional[str | None]
     evaluation_mode: Literal["retrieval_only", "generation_only", "full"]
+
 
 # api/v1/dataset
 class BenchmarkRequest(BaseModel):
@@ -75,7 +80,8 @@ class BenchmarkRequest(BaseModel):
     user_id: str
     dataset_name: str
 
-# api/v1/evaluator    
+
+# api/v1/evaluator
 class EvaluationRequest(BaseModel):
     session_id: str
     user_id: str
@@ -90,7 +96,9 @@ class RetrievalModel(BaseModel):
         ..., description="List of ground truth document IDs."
     )
     model: str = Field(
-        ...,description="Identifier for the model used for generation (e.g., 'azure', 'openai').")
+        ...,
+        description="Identifier for the model used for generation (e.g., 'azure', 'openai').",
+    )
     k: int = Field(
         ..., description="The number of top documents considered for retrieval metrics."
     )
@@ -98,12 +106,18 @@ class RetrievalModel(BaseModel):
 
 class GenerationModel(BaseModel):
     query: List[str] = Field(..., description="The input query or question.")
-    ground_truth_answer: List[List[Document|str]] = Field(..., description="The ground truth or reference answer.")
-    retrieved_contexts: List[List[Document|str]] = Field(
+    ground_truth_answer: List[List[Document | str]] = Field(
+        ..., description="The ground truth or reference answer."
+    )
+    retrieved_contexts: List[List[Document | str]] = Field(
         ..., description="The list of context strings passed to the generator."
     )
-    generated_answer: List[str] = Field(..., description="The generated response from the RAG model.")
-    model: str | None = Field(description="Identifier for the model used for generation (e.g., 'azure', 'openai').")
+    generated_answer: List[str] = Field(
+        ..., description="The generated response from the RAG model."
+    )
+    model: str | None = Field(
+        description="Identifier for the model used for generation (e.g., 'azure', 'openai')."
+    )
 
 
 class DatasetModel(BaseModel):
@@ -112,10 +126,18 @@ class DatasetModel(BaseModel):
 
 
 class GraphSchema(BaseModel):
-    retrieve_metrics: RetrievalMetrics = Field(..., description="A list of retrieval metrics to be calculated.")
-    generate_metrics: GenerationMetrics = Field(..., description="A list of generation metrics to be calculated.")
-    dataset: DatasetModel = Field(..., description="The dataset containing retrieval and generation data.")
-    evaluation_mode: Literal["retrieval_only", "generation_only", "full"]  = Field(..., description="The evaluation mode to run.")
+    retrieve_metrics: RetrievalMetrics = Field(
+        ..., description="A list of retrieval metrics to be calculated."
+    )
+    generate_metrics: GenerationMetrics = Field(
+        ..., description="A list of generation metrics to be calculated."
+    )
+    dataset: DatasetModel = Field(
+        ..., description="The dataset containing retrieval and generation data."
+    )
+    evaluation_mode: Literal["retrieval_only", "generation_only", "full"] = Field(
+        ..., description="The evaluation mode to run."
+    )
 
 
 # api/SHARED_PROCESS
@@ -123,5 +145,3 @@ class ShareRule(BaseModel):
     session_id: str
     config: UserConfig
     benchmark_dataset: RetrievalModel | GenerationModel
-
-
