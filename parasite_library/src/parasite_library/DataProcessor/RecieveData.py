@@ -3,12 +3,11 @@ from typing import List, Dict, Any, Optional
 import pandas as pd
 from io import BytesIO, StringIO
 from langchain_core.documents import Document
-
+import json
 
 class DataReceiver:
     def __init__(self):
         self.router = APIRouter()
-        # CSV 파일로 업로드 받는다고 가정
         self.router.add_api_route("/get-raw", self.receive_rawdata_csv, methods=["POST"])
         self.app = FastAPI(title="DataReceiver")
         self.app.include_router(self.router)
@@ -33,13 +32,19 @@ class DataReceiver:
         text = content.decode(encoding=encoding, errors="replace")
 
         try:
+            df = json.loads(text)
+            df = pd.DataFrame.from_dict(df, orient="index").transpose()
+            return df
+        except json.JSONDecodeError:
+            pass 
+
+        try:
             df = pd.read_csv(StringIO(text), **read_csv_kwargs)
+            if df.empty:
+                raise HTTPException(status_code=400, detail="CSV is empty.")
+            return df
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"파일 read 실패: {e}")
-
-        if df.empty:
-            raise HTTPException(status_code=400, detail="CSV is empty.")
-        return df
 
     def _df_to_raw_samples(
         self,
