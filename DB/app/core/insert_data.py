@@ -21,8 +21,7 @@ def insert_data(user_id: str, filename: str, file_content: bytes):
     
     try:
         client = MongoClient(f"mongodb://{MONGO_INITDB_ROOT_USERNAME}:{MONGO_INITDB_ROOT_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/{MONGO_DB_NAME}?authSource=admin")
-        user_id = user_id
-        user_db = client.user_id
+        user_db = client[user_id]
         filename_collection = user_db[filename]
 
         df = pl.read_csv(io.BytesIO(file_content))
