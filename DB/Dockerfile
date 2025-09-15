@@ -1,13 +1,32 @@
-FROM python:3.12.9-slim
+# Builder stage
+FROM python:3.11-slim AS builder
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+ENV UV_NO_PYTHON_DOWNLOADS=1
 
 WORKDIR /app
 
-COPY requirements.txt .
+ADD pyproject.toml /app/pyproject.toml
+ADD packages /app/packages
+ADD services/a_service services/a_service
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --all-packages --no-install-project --no-dev
 
-COPY ./app /app/app
+# Runtime stage
+FROM python:3.11-slim
 
-EXPOSE 8000
+RUN groupadd -r app && useradd -r -g app app
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY --from=builder --chown=app:app /app /app
+
+ENV PATH="/app/.venv/bin:$PATH"
+
+ENV PYTHONPATH=/app:/app/services/a_service
+
+USER app
+WORKDIR /app/services/a_service
+
+EXPOSE 8000 50051
+CMD ["uvicorn", "app.main:app", "--workers 2"]
