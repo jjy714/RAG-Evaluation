@@ -1,23 +1,6 @@
 version: '3.8'
 services:
-  backend:
-    build:
-      context: ./RAG_backend
-      dockerfile: Dockerfile
-    ports:
-      - "8001:8001"
-    volumes:
-      - ./RAG_backend/app:/app/app
-
-  frontend:
-    build:
-      context: ./RAG_frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./RAG_frontend/src:/app/src
-
+  
   rag_evaluation:
     build:
       context: ./RAG_Evaluation
@@ -26,3 +9,62 @@ services:
       - "8000:8000"
     volumes:
       - ./RAG_Evaluation:/app
+  
+  DB:
+    build:
+      context: ./DB
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./RAG_backend/app:/app/app
+
+  # frontend:
+  #   build:
+  #     context: ./RAG_frontend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./RAG_frontend/src:/app/src
+
+  mongo:
+    image: mongo
+    container_name: mongo
+    restart: always
+    ports:
+      - "9017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongo-data:/data/db
+
+  # Mongo Express Service
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    restart: always
+    ports:
+      - "9018:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: ${ME_CONFIG_MONGODB_URL}
+    depends_on:
+      - mongo # Tells this service to wait for the mongo service to be ready
+
+    # The Redis Database Service
+  redis:
+    image: redis:latest # Using a lightweight official Redis image
+    container_name: cache_redis
+    ports:
+      # Optional: Expose the Redis port to your local machine for debugging
+      - "6379:6379"
+    volumes:
+      # This named volume will persist Redis data across container restarts
+      - redis_data:/data
+
+
+# Top-level declaration for the named volume used by the mongo service
+volumes:
+  mongo-data:
+

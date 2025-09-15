@@ -16,12 +16,10 @@ def get_cache(session_id):
         )
     try:
         r.ping()
-        print("Connected to Redis!")
     except redis.exceptions.ConnectionError as e:
         print(f"Could not connect to Redis: {e}")
 
     # Example: Set and get a value
     return_value = r.get(session_id)
-    print(f"Value of {session_id}: {return_value}")
     return return_value
     

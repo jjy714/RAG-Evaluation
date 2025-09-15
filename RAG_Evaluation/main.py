@@ -1,14 +1,6 @@
-from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
-from fastapi import File, UploadFile
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-# from schema import EvaluationRequest, EvaluationStartResponse, EvaluationStatusResponse
+from fastapi import FastAPI
 from api.v1.endpoints.evaluator import evaluator
-import uuid
-import asyncio
-import json
 from api.v1.routers import api_router
-# Import your graph creation function and state
 from graphs.main_graph import create_main_graph, EvaluationState
 
 app = FastAPI(
@@ -25,8 +17,8 @@ Log as a file and store in User's -> session -> table in DB
 
 2. Make the graph interaction individual to interact with the frontend. 
 
-
 """
+
 # --- API Endpoints ---
 
 @app.get("/")

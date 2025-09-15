@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from api.v1.SHARED_PROCESS import SHARED_PROCESS
 from schema import UserConfig
 from cache_redis import set_cache
 import uuid
@@ -13,7 +12,7 @@ router = APIRouter()
 
 @router.post("")
 def store_config(config: UserConfig):
-    print(config)
+    print(f"RECIEVED CONFIG {config}")
     session_id = str(uuid.uuid4())
 
     json_config = UserConfig.model_dump(config)
