@@ -67,8 +67,8 @@ class GenerationMetrics(BaseModel):
 # api/v1/configuration
 class UserConfig(BaseModel):
     user_id: str
-    retrieval_metrics: List[Literal["mrr", "map", "f1", "ndcg", "precision", "recall"]]
-    generation_metrics: List[Literal["bleu", "rouge", "faithfulness"]]
+    retrieve_metrics: List[Literal["mrr", "map", "f1", "ndcg", "precision", "recall"]]
+    generate_metrics: List[Literal["bleu", "rouge", "faithfulness"]]
     top_k: int = 5
     model: Optional[str | None]
     evaluation_mode: Literal["retrieval_only", "generation_only", "full"]

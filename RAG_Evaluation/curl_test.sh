@@ -4,8 +4,8 @@ curl -X POST http://localhost:8000/v1/config \
 -H "Content-Type: application/json" \
 -d '{
     "user_id": "jjy714",
-    "retrieval_metrics": ["precision", "map", "ndcg"],
-    "generation_metrics": ["faithfulness"],
+    "retrieve_metrics": ["precision", "map", "ndcg"],
+    "generate_metrics": ["bleu"],
     "top_k": 10,
     "model": "None",
     "evaluation_mode": "full"
@@ -16,7 +16,7 @@ curl -X POST http://localhost:8000/v1/config \
 curl -X POST http://localhost:8000/v1/dataset/get-benchmark-dataset \
 -H "Content-Type: application/json" \
 -d '{
-    "session_id": "a521e338-6998-4b0f-ac06-9afa32f19095",
+    "session_id": "9bee0065-83f8-4b6d-8117-a3ac13bf00d6",
     "user_id" : "jjy714",
     "dataset_name": "response_merged_output.csv"
 }'
@@ -26,6 +26,6 @@ curl -X POST http://localhost:8000/v1/dataset/get-benchmark-dataset \
 curl -X POST http://localhost:8000/v1/evaluate/ \
 -H "Content-Type: application/json" \
 -d '{
-    "session_id": "a521e338-6998-4b0f-ac06-9afa32f19095",
+    "session_id": "9bee0065-83f8-4b6d-8117-a3ac13bf00d6",
     "user_id": "jjy714"
 }'

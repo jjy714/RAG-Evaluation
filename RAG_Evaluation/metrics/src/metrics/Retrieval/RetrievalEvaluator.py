@@ -84,7 +84,6 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         return self.calculate_map(k=k).get("map")
     
     def precision(self, k:int=5) -> Dict[str, float]:
-        
         return self.calculate_precision(k=k).get("micro_precision"), self.calculate_precision(k=k).get("macro_precision")
     
     def recall(self, k:int=5) -> Dict[str, float]:

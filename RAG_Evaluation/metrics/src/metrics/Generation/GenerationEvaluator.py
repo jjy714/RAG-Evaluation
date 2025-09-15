@@ -42,7 +42,8 @@ class GenerationEvaluator:
                 )
             print(f"EVALUATION MODEL AZURE")
         else:
-            # self.model = ChatOpenAI(model="Qwen3-30B-A3B",base_url="http://localhost:8000/v1", api_key="token-123")
+            # self.model = ChatOpenAI(model="Qwen3-30B-A3B",base_url="http://localhost:8000/v1", api_key="token-123") # For Server VLLM usage
+            self.model = ChatOpenAI(model="Qwen3-30B-A3B",base_url="http://127.0.0.1:11434", api_key="token-123") # For local Ollama usage
             print(f"EVALUATION MODEL NOT AZURE")
 
 

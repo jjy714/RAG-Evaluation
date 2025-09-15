@@ -1,0 +1,46 @@
+# Git files
+.git/
+.gitignore
+
+# Docker files
+# Dockerfile
+.dockerignore
+
+# Python cache
+pycache/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# IDE and editor directories
+.idea/
+.vscode/
+
+Lock files and local configs
+uv.lock
+config.local.yaml
+
+# Test and benchmark files (not needed in production)
+test/
+Benchmarks/
+
+# Notebooks and temporary scripts
+*.ipynb
+curl_test.sh
+
+# Local results and data outputs that aren't needed at runtime
+results/
+data/outputs/
+data/results/
+
+
+test/
+data/
+Benchmarks/
+results/
+*.ipynb
+curl_test.sh
+
+.DS_Store
+

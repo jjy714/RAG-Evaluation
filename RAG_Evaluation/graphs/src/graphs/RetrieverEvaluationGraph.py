@@ -30,7 +30,7 @@ class RetrievalEvaluationState(TypedDict):
     # --- INPUTS ---
     query: List[str]
     predicted_documents: List[List[Document]]
-    actual_documents: List[List[Document]]
+    ground_truth_documents: List[List[Document]]
     metrics_to_run: List[str]
     model: AzureChatOpenAI | ChatOpenAI | str
     k: int
@@ -62,7 +62,7 @@ def instantiate_evaluator_node(state: RetrievalEvaluationState) -> dict:
     print("\n--- (1) Instantiating Evaluator ---")
     evaluator = RetrievalEvaluator(
         query=state["query"],
-        actual_documents=state["actual_documents"],
+        ground_truth_documents=state["ground_truth_documents"],
         predicted_documents=state["predicted_documents"],
         model=state["model"],
     )
