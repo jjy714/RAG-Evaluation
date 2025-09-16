@@ -17,7 +17,7 @@ def read_data(user_id: str, file_name: str) -> list:
     print(f"[MONGO FETCHER {user_id}] Starting fetch for file '{file_name}'...")
 
     with MongoClient(f"mongodb://{MONGO_INITDB_ROOT_USERNAME}:{MONGO_INITDB_ROOT_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/{MONGO_DB_NAME}?authSource=admin") as client:
-        user_db = client.user_id
+        user_db = client[user_id]
         data_collection = user_db[file_name]
         print(user_db)
         print(data_collection)

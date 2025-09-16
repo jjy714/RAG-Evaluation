@@ -6,11 +6,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 REDIS_PORT = os.getenv("REDIS_PORT")
-
+REDIS_HOST = os.getenv("REDIS_HOST")
 
 def get_cache(session_id):
     r = redis.Redis(
-        host='localhost',
+        host=REDIS_HOST,
         port=int(REDIS_PORT),
         decode_responses=True
         )

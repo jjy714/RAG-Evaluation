@@ -1,19 +1,25 @@
-version: '3.8'
+
 services:
   
   rag_evaluation:
+    container_name: rag_evaluation
     build:
       context: ./RAG_Evaluation
       dockerfile: Dockerfile
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     volumes:
       - ./RAG_Evaluation:/app
   
-  DB:
+  db:
+    container_name: db
     build:
       context: ./DB
       dockerfile: Dockerfile
+    env_file:
+      - .env
     ports:
       - "8001:8001"
     volumes:
@@ -67,4 +73,4 @@ services:
 # Top-level declaration for the named volume used by the mongo service
 volumes:
   mongo-data:
-
+  redis_data:
