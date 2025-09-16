@@ -1,4 +1,6 @@
 
+SESSION_ID="22cb3a04-2cbf-4a81-9afc-cb312ebb4dfe"
+
 #### 1. CONFIG
 curl -X POST http://localhost:8000/v1/config \
 -H "Content-Type: application/json" \
@@ -15,20 +17,20 @@ curl -X POST http://localhost:8000/v1/config \
 
 curl -X POST http://localhost:8000/v1/dataset/get-benchmark-dataset \
 -H "Content-Type: application/json" \
--d '{
-    "session_id": "9bee0065-83f8-4b6d-8117-a3ac13bf00d6",
-    "user_id" : "jjy714",
-    "dataset_name": "response_merged_output.csv"
-}'
+-d "{
+    \"session_id\": \"${SESSION_ID}\",
+    \"user_id\" : \"jjy714\",
+    \"dataset_name\": \"response_merged_output.csv\"
+}"
 
 #### 3. EVALUATE
 
 curl -X POST http://localhost:8000/v1/evaluate/ \
 -H "Content-Type: application/json" \
--d '{
-    "session_id": "9bee0065-83f8-4b6d-8117-a3ac13bf00d6",
-    "user_id": "jjy714"
-}'
+-d "{
+    \"session_id\": \"${SESSION_ID}\",
+    \"user_id\": \"jjy714\"
+}"
 
 
 

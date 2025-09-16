@@ -36,3 +36,7 @@ docker network rm <network_name>: Removes a Docker network.
 System Commands:
 docker system df: Shows Docker disk space usage.
 docker system prune: Removes unused Docker data (stopped containers, unused networks, dangling images, and build cache). Use -a for more aggressive pruning.
+
+target rag_evaluation: failed to solve: error getting credentials - err: exec: "docker-credential-desktop": executable file not found in $PATH, out: ``
+vi ~/.docker/config.json
+credsStore -> credStore

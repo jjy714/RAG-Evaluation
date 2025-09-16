@@ -8,6 +8,8 @@ import json
 load_dotenv()
 
 REDIS_PORT = os.getenv("REDIS_PORT")
+REDIS_HOST = os.getenv("REDIS_HOST")
+
 print(REDIS_PORT)
 
 
@@ -22,7 +24,7 @@ def set_cache(session_id, input):
         input = json.dumps(input)
     
     r = redis.Redis(
-        host='localhost',
+        host=REDIS_HOST,
         port=int(REDIS_PORT),
         decode_responses=True
     )

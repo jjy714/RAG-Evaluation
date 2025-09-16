@@ -16,6 +16,7 @@ load_dotenv(env_path)
 ## STEP 2. GET DATASET !!
 
 DB_PORT= os.getenv("DB_PORT")
+DB_HOST = os.getenv("DB_HOST")
 router = APIRouter()
 
 
@@ -43,7 +44,7 @@ async def get_benchmark_dataset(request: BenchmarkRequest):
     session_id = request.session_id
     filename = request.dataset_name
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"http://localhost:{DB_PORT}/v1/read/{filename}?user_id={user_id}")
+        response = await client.get(f"http://{DB_HOST}:{DB_PORT}/v1/read/{filename}?user_id={user_id}")
         benchmark_dataset = response.json()
         
     if benchmark_dataset is None:
