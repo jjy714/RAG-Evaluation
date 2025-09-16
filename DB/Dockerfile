@@ -1,32 +1,25 @@
-# Builder stage
-FROM python:3.11-slim AS builder
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+FROM python:3.11-slim-trixie
 
-ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
-ENV UV_NO_PYTHON_DOWNLOADS=1
+# The installer requires curl (and certificates) to download the release archive
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
 
+# Download the latest installer
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+
+# Run the installer then remove it
+RUN sh /uv-installer.sh && rm /uv-installer.sh
+
+# Ensure the installed binary is on the `PATH`
+ENV PATH="/root/.local/bin/:$PATH"
+
+# Copy the project into the image
+ADD . /app
+
+# Sync the project into a new environment, asserting the lockfile is up to date
 WORKDIR /app
+RUN uv sync --locked
 
-ADD pyproject.toml /app/pyproject.toml
-ADD packages /app/packages
-ADD services/a_service services/a_service
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --all-packages --no-install-project --no-dev
-
-# Runtime stage
-FROM python:3.11-slim
-
-RUN groupadd -r app && useradd -r -g app app
-
-COPY --from=builder --chown=app:app /app /app
-
-ENV PATH="/app/.venv/bin:$PATH"
-
-ENV PYTHONPATH=/app:/app/services/a_service
-
-USER app
-WORKDIR /app/services/a_service
-
-EXPOSE 8000 50051
-CMD ["uvicorn", "app.main:app", "--workers 2"]
+EXPOSE 8001
+# Presuming there is a `my_app` command provided by the project
+CMD ["uv", "run", "uvicorn", "app.main:app", "--port", "8001"]
