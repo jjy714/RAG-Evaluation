@@ -37,3 +37,6 @@ curl -X POST http://localhost:8000/v1/evaluate/ \
 curl -X POST \
     -F "file=@/Users/jason/Claion/RAG/RAG_Evaluation/RAG_Evaluation/data/response_merged_output.csv" \
     "http://localhost:8001/v1/insert?user_id=jjy714"
+
+
+    
