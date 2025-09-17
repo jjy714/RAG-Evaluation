@@ -1,12 +1,12 @@
 
-SESSION_ID="22cb3a04-2cbf-4a81-9afc-cb312ebb4dfe"
+SESSION_ID="fbe0a8d8-0e70-484c-801b-97877310c1e9"
 
 #### 1. CONFIG
 curl -X POST http://localhost:8000/v1/config \
 -H "Content-Type: application/json" \
 -d '{
     "user_id": "jjy714",
-    "retrieve_metrics": ["precision", "map", "ndcg"],
+    "retrieve_metrics": ["precision", "map", "ndcg", "f1"],
     "generate_metrics": ["bleu"],
     "top_k": 10,
     "model": "None",

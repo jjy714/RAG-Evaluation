@@ -5,9 +5,19 @@ from langchain_core.documents import Document
 from metrics.Retrieval import RetrievalEvaluator
 from time import sleep
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from core.asdf import DataSender
 import logging
 
 
+"""
+@TODO 
+
+ADD A STEP BY STEP GRADUAL BATCHING ALGORITHM
+
+
+"""
+
+    
 METRICS_LIST = ["mrr", "map", "f1", "ndcg", "context_relevance","precision", "recall" ]
 
 # --- 2. Define the State for the Graph ---
@@ -20,9 +30,14 @@ class RetrievalEvaluationState(TypedDict):
     metrics_to_run: List[str]
     model: AzureChatOpenAI | ChatOpenAI | str
     k: int
+    
+    # --- API HANDLER --- 
+    session_id: str
+    endpoint: str
+    
     # --- INTERNAL STATE ---
     evaluator: Optional[RetrievalEvaluator]
-
+    
     # --- OUTPUT ---
     mrr_score: Optional[float]
     map_score: Optional[float]
@@ -35,6 +50,15 @@ class RetrievalEvaluationState(TypedDict):
     recall_macro: Optional[float]
     f1_micro: Optional[float]
     f1_macro: Optional[float]
+    
+    error_at_mrr_score: Optional[List]
+    error_at_map_score: Optional[List]
+    error_at_ndcg_score: Optional[List]
+    error_at_context_relevance_score: Optional[List]
+    
+    error_at_precision: Optional[List]
+    error_at_recall: Optional[List]
+    error_at_f1: Optional[List]
 
     final_results: Dict[str, float]
 
@@ -51,6 +75,8 @@ def instantiate_evaluator_node(state: RetrievalEvaluationState) -> dict:
         ground_truth_documents=state["ground_truth_documents"],
         predicted_documents=state["predicted_documents"],
         model=state["model"],
+        session_id = state["session_id"],
+        endpoint = state["endpoint"]
     )
     sleep(2)
     return {
@@ -62,7 +88,9 @@ def mrr_node(state: RetrievalEvaluationState) -> dict:
     print("--- (2a) Running MRR Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    mrr_score = evaluator.mrr(k=k)
+    error_at_mrr_score = state["error_at_mrr_score"]
+    mrr_score, error_at_mrr_score = evaluator.mrr(k=k)
+    #send error at mrr 
     sleep(2)
     return {
         "mrr_score": mrr_score
@@ -73,7 +101,8 @@ def map_node(state: RetrievalEvaluationState) -> dict:
     print("--- (2b) Running MAP Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    map_score = evaluator.map(k=k)
+    error_at_map_score = state["error_at_map_score"]
+    map_score, error_at_map_score = evaluator.map(k=k)
     sleep(2)
     return {"map_score": map_score}
 
@@ -81,8 +110,9 @@ def f1_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the f1 score."""
     print("--- (2c) Running f1 Node ---")
     evaluator = state["evaluator"]
+    error_at_f1_score = state["error_at_f1_score"]
     k = state["k"]
-    f1_micro, f1_macro = evaluator.f1(k=k)
+    f1_micro, f1_macro, error_at_f1_score = evaluator.f1(k=k)
     # logging.DEBUG(f" F1 SCORE DEBUG: {f1_micro, f1_macro}")
 
     return {
@@ -95,7 +125,8 @@ def ndcg_node(state: RetrievalEvaluationState) -> dict:
     print("--- (2d) Running NDCG Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    ndcg_score = evaluator.ndcg(k=k)
+    error_at_ndcg_score = state["error_at_ndcg_score"]
+    ndcg_score, error_at_ndcg_score = evaluator.ndcg(k=k)
     sleep(2)
     return {"ndcg_score": ndcg_score}
 
@@ -112,7 +143,8 @@ def precision_node(state: RetrievalEvaluationState) -> dict:
     print("--- (2f) Running Precision Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    precision_micro, precision_macro = evaluator.precision(k=k)
+    error_at_precision_score = state["error_at_precision_score"]
+    precision_micro, precision_macro, error_at_precision_score = evaluator.precision(k=k)
     # logging.DEBUG(f" PRECISION SCORE DEBUG: {precision_micro, precision_macro}")
     sleep(2)
     return {
@@ -124,8 +156,9 @@ def recall_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the Recall@5 score."""
     print("--- (2g) Running Recall Node ---")
     evaluator = state["evaluator"]
-    k = state["k"]    
-    recall_micro, recall_macro = evaluator.recall(k=k)
+    k = state["k"]
+    error_at_recall_score = state["error_at_recall_score"]
+    recall_micro, recall_macro, error_at_recall_score = evaluator.recall(k=k)
     # logging.DEBUG(f" RECALL SCORE DEBUG: {recall_micro, recall_macro}")
     sleep(2)
     return {
