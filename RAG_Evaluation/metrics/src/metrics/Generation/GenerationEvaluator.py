@@ -34,7 +34,7 @@ class GenerationEvaluator:
         self.ground_truth_answer = ground_truth_answer
         self.retrieved_contexts = retrieved_contexts
         self.generated_answer = generated_answer
-        if "azure" in model: # LLM-as-Judge Evaluator
+        if model is not None and "azure" in model: # LLM-as-Judge Evaluator
             self.model = AzureChatOpenAI(
                 azure_deployment=AZURE_DEPLOYMENT_NAME,  # or your deployment
                 api_version=AZURE_API_VERSION,  # or your api version
