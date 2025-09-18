@@ -14,6 +14,8 @@ class EvaluationState(TypedDict):
     evaluation_mode: Literal["retrieval_only", "generation_only", "full"]
     retriever_evaluation_result: Optional[Dict]
     generator_evaluation_result: Optional[Dict]
+    session_id: str
+    
 
 # --- Router Function ---
 def route_evaluations(state: EvaluationState) -> Literal["retrieval_evaluator", "generation_evaluator"]:
@@ -43,6 +45,7 @@ async def evaluate_retrieval(state: EvaluationState) -> Dict:
         "metrics_to_run": state["retrieve_metrics"],
         "model": state["dataset"]["Generation"]["model"],
         "k": state["dataset"]["Retrieval"]["k"],
+        "session_id": state["session_id"],
     }
 
     results = await retrieve_subgraph.ainvoke(retrieval_input)

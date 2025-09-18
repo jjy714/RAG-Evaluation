@@ -1,5 +1,5 @@
 
-SESSION_ID="fbe0a8d8-0e70-484c-801b-97877310c1e9"
+SESSION_ID="3a9d61b1-9dd1-4f44-9c59-c92522a08bf4"
 
 #### 1. CONFIG
 curl -X POST http://localhost:8000/v1/config \

@@ -247,12 +247,15 @@ class OfflineRetrievalEvaluators:
                     relevant_docs += 1
                     precision_sum += relevant_docs / i
             
-            average_precision = precision_sum / len(single_actual_docs) if single_actual_docs else 0
-            average_precisions.append(average_precision)
-            
-            # 3. 개별 점수가 0이면 인덱스를 리스트에 추가합니다.
-            if average_precision == 0:
+            if single_actual_docs:
+                average_precision = precision_sum / len(single_actual_docs)
+                average_precisions.append(average_precision)
+            else: 
+                average_precision = 0
+                average_precisions.append(average_precision)
                 zero_score_indexes.append(q_idx)
+
+            
         
         map_score = sum(average_precisions) / len(average_precisions) if average_precisions else 0.0
         
@@ -282,11 +285,14 @@ class OfflineRetrievalEvaluators:
             dcg_score = dcg(relevances)
             idcg_score = dcg(ideal_relevances)
             
-            single_ndcg_score = dcg_score / idcg_score if idcg_score > 0 else 0
-            ndcg_scores.append(single_ndcg_score)
-
-            if single_ndcg_score == 0:
+            if idcg_score > 0:
+                single_ndcg_score = dcg_score / idcg_score
+                ndcg_scores.append(single_ndcg_score)
+            else:
+                single_ndcg_score = 0
+                ndcg_scores.append(single_ndcg_score)
                 zero_score_indexes.append(q_idx)
+                
         
         ndcg = sum(ndcg_scores) / len(ndcg_scores) if ndcg_scores else 0.0
         

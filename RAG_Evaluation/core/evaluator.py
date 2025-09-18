@@ -83,12 +83,12 @@ def cleanse_data(data: List[Dict[str, Any]], max_retrieved_docs: int = 5) -> Dic
     
     
 def create_input_payload(request):
-    
     stored_session_json = get_cache(request.session_id)
     if not stored_session_json:
         raise HTTPException(status_code=404, detail="Session not found or has expired.")
     session_data = json.loads(stored_session_json)
     
+    print(session_data)
     config = session_data["config"]
     config = json.loads(config)
     benchmark_dataset = session_data["benchmark_dataset"]
@@ -122,6 +122,7 @@ def create_input_payload(request):
     final_payload = {
         "retrieve_metrics": config.get("retrieve_metrics", []),
         "generate_metrics":config.get("generate_metrics", []),
+        "session_id": request.session_id,
         "dataset": {
             "Retrieval": retrieval_dataset,
             "Generation": generation_dataset,

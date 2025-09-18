@@ -1,4 +1,4 @@
-from .RetrieverEvaluationGraph import create_retrieval_subgraph
+from .oldRetrieverEvaluationGraph import create_retrieval_subgraph
 from .main_graph import create_main_graph
 
 __any__ = [
