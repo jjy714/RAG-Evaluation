@@ -4,5 +4,6 @@ __any__ = [
     'UserConfig',
     'GenerationMetrics',
     'RetrievalMetrics',
-    'BenchmarkRquest'
+    'BenchmarkRquest',
+    'DataPoint'
 ]

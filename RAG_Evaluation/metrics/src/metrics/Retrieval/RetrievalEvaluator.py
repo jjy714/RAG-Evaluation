@@ -11,31 +11,36 @@ from langchain_openai import ChatOpenAI, AzureChatOpenAI
 from typing import Union, List, Dict, Optional, Any
 from enum import Enum
 from cache_redis import set_cache
-import httpx
-import asyncio
+from core import DataPointApiClient, RedisSessionHandler
+import logging
 
 
-# from .accuracy 
-class ApiClient:
-    def __init__(self, session_id: str):
-        self.endpoint = "/v1/dashboard"
-        self.session_id = session_id
-        print(f"API Client initialized for endpoint: {self.endpoint}")
+
+DASHBOARD_ENDPOINT = "/v1/dashboard"
+# # from .accuracy 
+# class ApiClient:
+#     def __init__(self, session_id: str):
+#         self.session_id = session_id
+#         print(f"API Client initialized for endpoint: {self.endpoint}")
         
         
-    def send_redis(self, input): 
-        return set_cache(session_id=self.session_id, input=input)
+#     def send_redis(self, input): 
+#         return set_cache(session_id=self.session_id, input=input)
 
-    async def send_dashboard(self, payload: Dict[str, Any]):
-        """Sends a single metric data point to the dashboard API."""
-        async with httpx.AsyncClient() as client:    
-            try:
-                response = client.post(self.endpoint, json=payload)
-                response.raise_for_status()
-                print(f"Successfully sent metric: {payload['metric_name']}")
-            except client.RequestException as e:
-                print(f"Error sending metric to dashboard: {e}")
-        return response
+#     async def send_dashboard(self, payload: Dict[str, Any]):
+#         """Sends a single metric data point to the dashboard API."""
+#         async with httpx.AsyncClient() as client:    
+#             try:
+#                 response = client.post(self.endpoint, json=payload)
+#                 response.raise_for_status()
+#                 print(f"Successfully sent metric: {payload['metric_name']}")
+#             except client.RequestException as e:
+#                 print(f"Error sending metric to dashboard: {e}")
+#         return response
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class AveragingMethod(Enum):
@@ -71,14 +76,16 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             matching_criteria=matching_criteria
         )
         
-        self.sender = ApiClient(session_id=session_id)
-        
+        self.sender = DataPointApiClient(session_id=session_id, endpoint=DASHBOARD_ENDPOINT)
         
         self.query = query
         self.model = model
         self.predicted_docs = predicted_documents
         self.actual_docs = ground_truth_documents
         self.predicted_docs = predicted_documents
+        
+        redis_handler = RedisSessionHandler(session_id=session_id)
+        logger.addHandler(redis_handler)
         
         
     def f1(self, k:int=5) -> List[Dict[str, float]]:
@@ -89,7 +96,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(predicted_doc)):
             temp= (self.calculate_f1_score(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k).get("micro_f1"), self.calculate_f1_score(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k).get("macro_f1"))
             if len(predicted_doc) % 10 == 0:
-                print(f"-----[{i}] F1 RESULT: {temp} -----")
+                logger.info(f"-----[{i}] F1 RESULT: {temp} -----")
             # self.sender.send_redis(temp)
             f1_result.append(temp)
         # f1 _result = [f1 score list , error index list]
@@ -103,7 +110,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(predicted_doc)):
             temp = self.calculate_mrr(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k).get("mrr")
             if len(predicted_doc) % 10 == 0:            
-                print(f"-----[{i}] MRR RESULT: {temp} -----")
+                logger.info(f"-----[{i}] MRR RESULT: {temp} -----")
             mrr_result.append(temp)
             
             
@@ -125,7 +132,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(predicted_doc)):
             temp = self.calculate_map(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k).get("map")
             if len(predicted_doc) % 10 == 0:
-                print(f"-----[{i}] MAP RESULT: {temp} -----")
+                logger.info(f"-----[{i}] MAP RESULT: {temp} -----")
             map_result.append(temp)
         
         return map_result[0][-1], map_result[-1]
@@ -138,7 +145,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(predicted_doc)):
             temp = (self.calculate_precision(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k).get("micro_precision"), self.calculate_precision(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i],k=k).get("macro_precision"))
             if len(predicted_doc) % 10 == 0:            
-                print(f"-----[{i}] PRECISION RESULT: {temp} -----")
+                logger.info(f"-----[{i}] PRECISION RESULT: {temp} -----")
             precision_result.append(temp)
         
         return precision_result[0][-1], precision_result[-1]
@@ -150,7 +157,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         recall_result = []
         for i in range(len(predicted_doc)):
             temp = (self.calculate_recall(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k).get("micro_recall"), self.calculate_recall(k=k).get("macro_recall"))
-            print(f"-----[{i}] RECALL RESULT: {temp} -----")
+            logger.info(f"-----[{i}] RECALL RESULT: {temp} -----")
             recall_result.append(temp)
         
         return recall_result[0][-1], recall_result[-1]
@@ -162,7 +169,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         ndcg_result = []
         for i in range(len(predicted_doc)):
             temp = (self.calculate_ndcg(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k).get("ndcg"))
-            print(f"-----[{i}] NDCG RESULT: {temp} -----")
+            logger.info(f"-----[{i}] NDCG RESULT: {temp} -----")
             ndcg_result.append(temp)
         
         return ndcg_result[0][-1], ndcg_result[-1]

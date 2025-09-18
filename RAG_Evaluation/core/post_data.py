@@ -1,16 +1,11 @@
 import json
-from typing import Any, Dict
+from typing import Any, Dict, List
 import httpx
 import asyncio
 from fastapi import FastAPI, HTTPException
 from cache_redis import get_cache, set_cache
-from pydantic import BaseModel
+from schema import DataPoint
 
-
-class DataPoint(BaseModel):
-    session_id: str
-    endpoint: str
-    payload: Dict[str, Any]  
 
 
 
@@ -20,7 +15,7 @@ class DataPointApiClient:
         self.session_id = session_id
         print(f"API Client initialized for endpoint: {self.endpoint}")
 
-    def send_redis(self, data: Dict[str, Any], error: [str]):
+    def send_redis(self, data: Dict[str, Any], error: List[str]):
         session_data = get_cache(session_id=self.session_id)
         if isinstance(session_data, str):
             session_data = json.loads(session_data)

@@ -1,11 +1,14 @@
-
 from langgraph.graph import StateGraph
 from typing_extensions import TypedDict, List, Dict, Optional
 from datasets import Dataset
 from metrics.Generation import GenerationEvaluator
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
-import numpy as np
 from time import sleep
+from core import RedisSessionHandler
+import numpy as np
+import logging
+
+
 
             # query: List[str],
             # ground_truth_answer: List[List[Document]],
@@ -13,6 +16,9 @@ from time import sleep
             # generated_answer: List[str],
             # model: str
             # ):
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 METRICS_LIST=['rouge', 'bleu', 'faithfulness']
 
@@ -36,7 +42,10 @@ def instantiate_evaluator_node(state: GeneratorEvaluationState) -> dict:
     This is the first step. It creates the evaluator instance ONCE and
     initializes the results dictionary and metrics list copy.
     """
-    print("\n--- (1) Instantiating Evaluator ---")
+    redis_handler = RedisSessionHandler(session_id=state["session_id"])
+    logger.addHandler(redis_handler)
+    
+    logger.info("\n--- (1) Instantiating Evaluator ---")
     evaluator = GenerationEvaluator(
         query=state["query"],
         ground_truth_answer=state["ground_truth_answer"],
@@ -51,7 +60,7 @@ def instantiate_evaluator_node(state: GeneratorEvaluationState) -> dict:
 
 async def rouge_node(state: GeneratorEvaluationState):
     """Node to calculate only the ROUGE score."""
-    print("--- (2a) Running rouge Node ---")
+    logger.info("--- (2a) Running rouge Node ---")
     evaluator = state["evaluator"]
     rouge_score = await evaluator.rouge()
     sleep(2)
@@ -59,7 +68,7 @@ async def rouge_node(state: GeneratorEvaluationState):
 
 async def bleu_node(state: GeneratorEvaluationState):
     """Node to calculate only the BLEU score."""
-    print("--- (2b) Running BLEU Node ---")
+    logger.info("--- (2b) Running BLEU Node ---")
     evaluator = state["evaluator"]
     bleu_score = await evaluator.bleu()
     sleep(2)
@@ -68,7 +77,7 @@ async def bleu_node(state: GeneratorEvaluationState):
 
 async def faithfulness_node(state: GeneratorEvaluationState):
     """Node to calculate only the Faithfulness score."""
-    print("--- (2c) Running Faithfulness Node ---")
+    logger.info("--- (2c) Running Faithfulness Node ---")
     evaluator = state["evaluator"]
     faithfulness_score = await evaluator.faithfulness()
     sleep(2)
@@ -76,7 +85,7 @@ async def faithfulness_node(state: GeneratorEvaluationState):
 
 def finalize_node(state: GeneratorEvaluationState) -> dict:
     """Optionally consolidate all scores into final_results."""
-    print("--- (3) Finalizing Results ---")
+    logger.info("--- (3) Finalizing Results ---")
     final_scores = {
         "rouge": state.get("rouge_score"),
         "bleu": state.get("bleu_score"),
@@ -90,16 +99,16 @@ def finalize_node(state: GeneratorEvaluationState) -> dict:
 
 
 def parallelize_metrics(state: GeneratorEvaluationState) -> str:
-    print("--- Routing Metrics ---")
+    logger.info("--- Routing Metrics ---")
     
     metric = state["metrics_to_run"]
         
     if not state["metrics_to_run"]:
-        print("→ All metrics computed. Go to finalize.")
+        logger.info("→ All metrics computed. Go to finalize.")
         return "finalize"
     
     if metric not in METRICS_LIST:
-        print("No evaluation metric selected\n Choose from the following metrics list \n{METRICS_LIST}")
+        logger.info("No evaluation metric selected\n Choose from the following metrics list \n{METRICS_LIST}")
     sleep(2)
     return metric
 # --- 5. Build and Compile the Subgraph ---

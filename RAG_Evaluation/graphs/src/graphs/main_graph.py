@@ -4,7 +4,14 @@ from langgraph.graph import START, END, StateGraph
 from datasets import Dataset
 from .RetrieverEvaluationGraph import create_retrieval_subgraph, RetrievalEvaluationState
 from .GeneratorEvaluationGraph import create_generation_subgraph, GeneratorEvaluationState
+from core import RedisSessionHandler
+import logging
 import asyncio
+    
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 # --- EvaluationState Type ---
 class EvaluationState(TypedDict):
@@ -19,16 +26,19 @@ class EvaluationState(TypedDict):
 
 # --- Router Function ---
 def route_evaluations(state: EvaluationState) -> Literal["retrieval_evaluator", "generation_evaluator"]:
-    print("--- (*) Routing Evaluation Mode ---")
+    redis_handler = RedisSessionHandler(session_id=state["session_id"])
+    logger.addHandler(redis_handler)
+        
+    logging.info("--- (*) Routing Evaluation Mode ---")
     mode = state["evaluation_mode"]
     if "retrieval_only" in mode:
-        print("→ Route to Retrieval Evaluator ONLY")
+        logging.info("→ Route to Retrieval Evaluator ONLY")
         return "retrieval_evaluator"
     elif "generation_only" in mode:
-        print("→ Route to Generation Evaluator ONLY")
+        logging.info("→ Route to Generation Evaluator ONLY")
         return "generation_evaluator"
     elif "full" in mode:
-        print("→ Route to Retrieval THEN Generation")
+        logging.info("→ Route to Retrieval THEN Generation")
         return "full"
     else:
         raise ValueError(f"Invalid evaluation_mode: {mode}")
@@ -73,6 +83,7 @@ async def evaluate_generation(state: EvaluationState) -> Dict:
 
 # --- Router Node Definition ---
 def router(state: EvaluationState) -> Dict:
+    
     return {}  # No update needed, just branching
 
 

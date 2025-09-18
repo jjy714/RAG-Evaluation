@@ -30,14 +30,9 @@ def set_cache(session_id, input):
     )
     try:
         r.ping()
-        print("Connected to Redis!")
     except redis.exceptions.ConnectionError as e:
         print(f"Could not connect to Redis: {e}")
-    
-    
     try: 
-        
         r.set(session_id, input)
-        print(f"SET SUCCESS FOR {session_id}")
     except Exception as e:
         print(e)

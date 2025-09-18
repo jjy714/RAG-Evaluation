@@ -140,8 +140,8 @@ class GraphSchema(BaseModel):
     )
 
 
-# api/SHARED_PROCESS
-class ShareRule(BaseModel):
+# core/post_data
+class DataPoint(BaseModel):
     session_id: str
-    config: UserConfig
-    benchmark_dataset: RetrievalModel | GenerationModel
+    endpoint: str
+    payload: Dict[str, Any]  
