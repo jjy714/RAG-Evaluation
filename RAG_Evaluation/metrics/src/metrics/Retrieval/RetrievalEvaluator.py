@@ -18,16 +18,14 @@ import asyncio
 class ApiClient:
     def __init__(self, endpoint: str):
         self.endpoint = endpoint
-        # You might use a requests.Session() here for connection pooling
         print(f"API Client initialized for endpoint: {self.endpoint}")
 
     async def send_metric(self, payload: Dict[str, Any]):
         """Sends a single metric data point to the dashboard API."""
-        # In a real implementation, you would use a library like requests or httpx
         async with httpx.AsyncClient() as client:    
             try:
                 response = client.post(self.endpoint, json=payload)
-                response.raise_for_status() # Raise an exception for bad status codes
+                response.raise_for_status() 
                 print(f"Successfully sent metric: {payload['metric_name']}")
             except client.RequestException as e:
                 print(f"Error sending metric to dashboard: {e}")
@@ -91,4 +89,3 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
     
     def ndcg(self, k:int=5) -> Dict[str,float]:
         return self.calculate_ndcg(k=k).get("ndcg")
-
