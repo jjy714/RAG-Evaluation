@@ -20,7 +20,8 @@ def store_config(config: UserConfig):
     
     session_data = {
         "config": json_config, # Store config as a dictionary
-        "benchmark_dataset": None      # Add a placeholder for the dataset
+        "benchmark_dataset": None,      # Add a placeholder for the dataset
+        "session_log": []
     }
     
     set_cache(session_id=session_id, input=session_data)
