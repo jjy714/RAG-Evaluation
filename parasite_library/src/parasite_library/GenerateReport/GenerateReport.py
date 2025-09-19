@@ -17,6 +17,7 @@ from parasite_library.DataProcessor.RecieveData import DataReceiver
 load_dotenv()
 api_key = os.getenv("API_KEY")
 REDIS_PORT = os.getenv("REDIS_PORT")
+REDIS_HOST = os.getenv("REDIS_HOST")
 
 class GenerateReport:
     def __init__(self, embedding_model: Optional[Any | None], llm_model: Any, session_id:str, **kwargs):
@@ -26,7 +27,7 @@ class GenerateReport:
         self.session_id = session_id
         self.kwargs = kwargs
         self.r = redis.Redis(
-                host='localhost',
+                host=REDIS_HOST,
                 port=int(REDIS_PORT),
                 decode_responses=True
                 )
@@ -69,13 +70,13 @@ class GenerateReport:
 ## main
 async def main(data):
     session_id = "abc"
-    # embeddings = OpenAIEmbeddings(model="text-embedding-3-large", api_key=api_key)
-    embeddings = None
-    llm = ChatOpenAI(
-        model="gemma-3-4b-it",
-        api_key='token-123',
-        base_url="http://localhost:8000/v1",
-    )
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large", api_key=api_key)
+    # embeddings = None
+    # llm = ChatOpenAI(
+    #     model="gemma-3-4b-it",
+    #     api_key='token-123',
+    #     base_url="http://localhost:8000/v1",
+    # )
 
     llm = ChatOpenAI(model="gpt-4o-mini", api_key=api_key)
 
