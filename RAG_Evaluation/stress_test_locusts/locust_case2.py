@@ -6,7 +6,7 @@ import uuid
 
 ## insert data to mongo first
 # curl -X POST \
-#     -F "file=@/home/minjichoi/RAG-Evaluation/RAG_Evaluation/stress_test_locusts/bench_lotte_korag.csv" \
+#     -F "file=@/home/minjichoi/RAG-Evaluation/RAG_Evaluation/data/response_merged_output.csv" \
 #     "http://localhost:8001/v1/insert?user_id=minjichoi"
 
 
@@ -44,7 +44,7 @@ class RAGEvaluationUser(HttpUser):
         dataset_payload = {
             "session_id": session_id,
             "user_id": user_id,
-            "dataset_name": "bench_lotte_korag.csv"
+            "dataset_name": "response_merged_output.csv"
         }
 
         with self.client.post("/v1/dataset/get-benchmark-dataset",

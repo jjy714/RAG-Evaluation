@@ -23,8 +23,12 @@ def cleanse_data(data: List[Dict[str, Any]], max_retrieved_docs: int = 5) -> Dic
     ground_truth_documents_batch = []
     ground_truth_answers = []
     generated_answers = []
-
+    data = data['records']
     for row in data:
+
+        if isinstance(row, str):
+            row = json.loads(row)
+
         queries.append(row.get("question"))
         ground_truth_answers.append(row.get("target_answer"))
         generated_answers.append(row.get("response"))
