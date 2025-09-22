@@ -51,20 +51,21 @@ class GenerateReport:
         stored_session_json = self.r.get(self.session_id)
         session_data = json.loads(stored_session_json)
         evaluate_result = session_data["metric_result"]
-        return evaluate_result
+        dataset = session_data["benchmark_dataset"]
+        return evaluate_result, dataset
         
-    def _get_error_query_docs(self, data: pl.DataFrame, error_index: list[int]):
+    def _get_error_query_docs(self, data: Any, error_index: list[int]):
+        data = pl.DataFrame(data)
         error_rows = data[error_index]
         return error_rows.select(
             ["query", "predicted_documents", "ground_truth_documents", "retrieved_contexts"]
         ).to_dicts()
         
-    async def create_report(self, data : Any): 
+    async def create_report(self): 
         # TODO:  data는 UI에 저장되어있다고 가정
-
-        evaluate_result = self._load_eval_result()
+        evaluate_result, dataset = self._load_eval_result()
         for metric, score_dict in evaluate_result.items():
-            score_dict["error_index"] = self._get_error_query_docs(data, score_dict["error_index"])
+            score_dict["error_index"] = self._get_error_query_docs(data=dataset, error_index=score_dict["error_index"])
         
         print("final_input result: ", evaluate_result)
         script_dir = Path(__file__).parent.parent.resolve()
@@ -83,7 +84,7 @@ class GenerateReport:
         return eval_report
 
 ## main
-async def main(session_id, data, model="gpt-4o-mini", embedding_model="text-embedding-3-large"):
+async def main(session_id, model="gpt-4o-mini", embedding_model="text-embedding-3-large"):
     embeddings = OpenAIEmbeddings(model=embedding_model, api_key=api_key)
     # embeddings = None
     # llm = ChatOpenAI(
@@ -93,7 +94,7 @@ async def main(session_id, data, model="gpt-4o-mini", embedding_model="text-embe
     # )
 
     llm = ChatOpenAI(model=model, api_key=api_key)
-
+    self.r["benchmark_dataset"]
     solver = GenerateReport(session_id=session_id, llm_model=llm, embedding_model=embeddings)
     eval_report = await solver.create_report(data=data)
     return eval_report

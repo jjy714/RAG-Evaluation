@@ -5,7 +5,7 @@ from langchain_core.documents import Document
 from metrics.Retrieval import RetrievalEvaluator
 from time import sleep
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
-from core.asdf import DataSender
+# from core.asdf import DataSender
 import logging
 
 

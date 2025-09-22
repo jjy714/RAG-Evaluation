@@ -1,21 +1,10 @@
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
-import json
-from typing import List, Dict, Any
-import polars as pl
+from typing import Dict
 from parasite_library.DataProcessor.DataPreprocessor import data_process
 from parasite_library.GenerateReport.GenerateReport import main
-from pydantic import BaseModel, field_validator
 
 app = FastAPI() 
-
-class GenerateEvalReport(BaseModel):
-    session_id : str
-    data : List[Dict[str, Any]]
-    @field_validator("data", mode="after")
-    def convert_to_pl(cls, v):
-        return pl.DataFrame(v)
-
 
 """
 @TODO
@@ -50,8 +39,7 @@ async def receieve_data(file: UploadFile = File(...)):
 #  uv run uvicorn app:app --reload --port 8001
 
 @app.post("/get-evaluate-report")
-async def get_evaluate_report(payload : GenerateEvalReport):
-    session_id = payload.session_id
-    data = payload.data
+async def get_evaluate_report(payload : Dict):
+    session_id = payload["session_id"]
 
-    return {"eval_report": await main(session_id=session_id, data=data)}
+    return {"eval_report": await main(session_id=session_id)}
