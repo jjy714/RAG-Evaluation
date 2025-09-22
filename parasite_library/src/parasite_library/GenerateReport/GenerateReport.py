@@ -1,3 +1,4 @@
+from ipaddress import v6_int_to_packed
 import redis
 import json
 import asyncio
@@ -6,6 +7,7 @@ from operator import itemgetter
 from pathlib import Path
 from typing import Any, List, Dict, Optional
 from tqdm import tqdm
+import polars as pl
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -18,7 +20,6 @@ load_dotenv()
 api_key = os.getenv("API_KEY")
 REDIS_PORT = os.getenv("REDIS_PORT")
 REDIS_HOST = os.getenv("REDIS_HOST")
-
 class GenerateReport:
     def __init__(self, embedding_model: Optional[Any | None], llm_model: Any, session_id:str, **kwargs):
 
@@ -35,42 +36,55 @@ class GenerateReport:
             self.r.ping()
         except redis.exceptions.ConnectionError as e:
             print(f"Could not connect to Redis: {e}")
-
-    def load_eval_result(self):
+# {"metric_result"
+#      retrieval_evaluation_result = {
+#     "mrr": {"score": mrr_score, "error_index": error_at_mrr_score},
+#     "map": {"score": map_score, "error_index": error_at_map_score},
+#     "f1": {"score": f1_score, "error_index": error_at_f1_score},
+#     "ndcg": {"score": ndcg_score, "error_index": error_at_ndcg_score},
+#     "context_relevance": {"score": context_relevance_score},
+#     "precision": {"score": precision_score, "error_index": error_at_precision_score},
+#     "recall": {"score": recall_score, "error_index": error_at_recall_score},
+#     }
+# }
+    def _load_eval_result(self):
         stored_session_json = self.r.get(self.session_id)
         session_data = json.loads(stored_session_json)
-        metric_result = session_data["metric_result"] # {"mrr": {"score": [], "error_index": []}, "map": {"score": [], "error_index": []}}
-        for metric, score_dict in metric_result.items():
-            score_dict["score"] = score_dict["score"].mean()
+        evaluate_result = session_data["metric_result"]
+        return evaluate_result
+        
+    def _get_error_query_docs(self, data: pl.DataFrame, error_index: list[int]):
+        error_rows = data[error_index]
+        return error_rows.select(
+            ["query", "predicted_documents", "ground_truth_documents", "retrieved_contexts"]
+        ).to_dicts()
+        
+    async def create_report(self, data : Any): 
+        # TODO:  data는 UI에 저장되어있다고 가정
 
-        return metric_result
-    def _get_error_query_docs(self, data, error_index):
-        error_data = data.iloc[error_index, :]
-        return error_data[["qeury", "predicted_documents", 'ground_truth_documents', 'generated_answer' 'ground_truth_answer']]
-    
-    async def create_report(self, metric_result: str, false_value: dict):
+        evaluate_result = self._load_eval_result()
+        for metric, score_dict in evaluate_result.items():
+            score_dict["error_index"] = self._get_error_query_docs(data, score_dict["error_index"])
+        
+        print("final_input result: ", evaluate_result)
         script_dir = Path(__file__).parent.parent.resolve()
-        prompt_path = script_dir / "Prompts" / "REPORT_PROMPT.txt"
-        template_string = prompt_path.read_text(encoding="utf-8")
-        # error_list = _get_error_query_docs(data, error_index)
-
-        formatted_prompt = template_string.format(score_result=metric_result["metric_result"], 
-                                                  error_list=error_list)
+        
+        prompt = script_dir / "Prompts" / "REPORT_PROMPT.txt"
+        prompt = prompt.read_text(encoding="utf-8")
+        prompt = prompt.format(metric_result=evaluate_result)
 
         eval_report = await self.llm_model.ainvoke(
             [
-                SystemMessage(content=formatted_prompt),
+                SystemMessage(content=prompt),
             ]
         )
         eval_report = eval_report.content
-
+        print("final result ; ", eval_report)
         return eval_report
 
-
 ## main
-async def main(data):
-    session_id = "abc"
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-large", api_key=api_key)
+async def main(session_id, data, model="gpt-4o-mini", embedding_model="text-embedding-3-large"):
+    embeddings = OpenAIEmbeddings(model=embedding_model, api_key=api_key)
     # embeddings = None
     # llm = ChatOpenAI(
     #     model="gemma-3-4b-it",
@@ -78,13 +92,11 @@ async def main(data):
     #     base_url="http://localhost:8000/v1",
     # )
 
-    llm = ChatOpenAI(model="gpt-4o-mini", api_key=api_key)
+    llm = ChatOpenAI(model=model, api_key=api_key)
 
-    solver = GenerateReport(llm_model=llm, embedding_model=embeddings, session_id=session_id)
-    ## for test
-
-    eval_report = await solver.load_eval_result()
-    return {"eval_repot": eval_report}
+    solver = GenerateReport(session_id=session_id, llm_model=llm, embedding_model=embeddings)
+    eval_report = await solver.create_report(data=data)
+    return eval_report
 
 
 if __name__ == "__main__":

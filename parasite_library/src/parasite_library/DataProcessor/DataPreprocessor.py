@@ -49,7 +49,7 @@ class DataPreprocessor:
             prompt_path = script_dir / ".." /  "Prompts" / "KOR_GENERATE_ANS_PROMPT.txt"
             template_string = prompt_path.read_text(encoding="utf-8")
             prompt = ChatPromptTemplate.from_template(template_string)
-
+            # TODO: temporary_vector_store_copy에 buffer 공간만큼 비우고 train data 넣어 활용하는 기능 
             rag_chain = (
 
                 {
@@ -71,13 +71,21 @@ class DataPreprocessor:
         except Exception as e:
             print(f"An unexpected error occurred while creating the chain: {e}")
             raise
+
+    
+    def _create_document(self, page_content: str, file_name: str | None, page_num: int | None) -> Document | None:
+        if not page_content:
+            return None
         
-    def _to_documents(self, document_list: List[Dict]) -> List[Document]:
-        return [
-            Document(page_content=docu_dict["text"], metadata={"file_name": docu_dict["file_name"]}) for docu_dict in document_list if docu_dict and docu_dict != "null"
-        ]
-        
-    def chunker(self, docs: List[str]):
+        metadata = {
+            'file_name': file_name,
+            'page': page_num
+        }
+        clean_metadata = {k: v for k, v in metadata.items() if v is not None}
+        return Document(page_content=page_content, metadata=clean_metadata)
+
+
+    def chunker(self, docs: List[Document]):
 
         chunk_overlap = self.kwargs.get("chunk_overlap", 5)
         chunk_size = self.kwargs.get("chunk_size", 100)
@@ -86,7 +94,7 @@ class DataPreprocessor:
             chunk_size=chunk_size, chunk_overlap=chunk_overlap
         )
 
-        splits = text_splitter.split_documents(self._to_documents(docs))
+        splits = text_splitter.split_documents(docs)
         return splits
 
     def add_documents(self, documents: List[Document]):
@@ -109,70 +117,80 @@ class DataPreprocessor:
         return result
     
     def _serialize_docs(self, docs: List):
-        if not docs:
-            return []
-        result = []
-        for d in docs:
-            if isinstance(d, Document):
-                result.append({
-                    "text": d.page_content,
-                    "file_name": d.metadata
-                })
-            else:
-                result.append(d)  # 이미 dict일 수도 있으니까 그대로 append
-        return result
+        pass
+        # if not docs:
+        #     return []
+        # result = []
+        # for d in docs:
+        #     if isinstance(d, Document):
+        #         result.append({
+        #             "text": d.page_content,
+        #             "file_name": d.metadata
+        #         })
+        #     else:
+        #         result.append(d)  # 이미 dict일 수도 있으니까 그대로 append
+        # return result
 
-    async def _generate_synthetic_data(self, context: str):
+    async def _generate_synthetic_data(self, query: str, context: str):
         buffer_k = self.kwargs.get("buffer_k", 5)
+        synthetic_docs = []
 
         script_dir = Path(__file__).parent.resolve()
         prompt_path = script_dir / ".." / "Prompts" / "KOR_PROMPT.txt"
         template_string = prompt_path.read_text(encoding="utf-8")
+        formatted_prompt = template_string.format(query=query, context=context, previous_hard_negatives=synthetic_docs)
 
-        # for _ in range(buffer_k):
-        formatted_prompt = template_string.format(context=context, n=buffer_k)
+        for _ in range(buffer_k):
+            synthetic_doc = await self.llm_model.ainvoke(
+                [
+                    SystemMessage(content=formatted_prompt),
+                    HumanMessage(content="합성 문서를 작성해줘.")
+                ]
+            )
+            try:
+                synthetic_doc = synthetic_doc.content
+                synthetic_doc = self.cleaning(synthetic_doc, "hard_negative")
+            except Exception:
+                pass
+            synthetic_docs.append(synthetic_doc)
 
-        synthetic_doc = await self.llm_model.ainvoke(
-            [
-                SystemMessage(content=formatted_prompt),
-                HumanMessage(content="합성 문서를 작성해줘.")
-            ]
-        )
-        synthetic_doc = synthetic_doc.content
-        synthetic_doc = self.cleaning(synthetic_doc, 'hard_negatives')
-        synthetic_doc = [{"text": doc, "file_name": f"temp_doc{i}.pdf"} for i, doc in enumerate(synthetic_doc)]
-        return synthetic_doc
+        return synthetic_docs
 
     async def create_retrieval_bench_data(self, raw_data: List):
         benchmark_data = []
         for idx, row in tqdm(enumerate(raw_data), total=len(raw_data), desc="create_retrieval_bench_data"):
-            row_q = row["query"]
-            row_docs = ast.literal_eval(row["ground_truth_documents"]) if type(row["ground_truth_documents"])==str else row["ground_truth_documents"]
-            ground_truth_answer = ast.literal_eval(row["ground_truth_answer"]) if type(row["ground_truth_answer"])==str else row["ground_truth_answer"]
-
             per_data = {}
             per_data["idx"] = idx + 1
-            per_data["query"] = row_q
-            context = "\n\n".join([str(doc) for doc in row_docs])
-            context = context if len(context) < 10000 else context[:10000]
-            per_data["ground_truth_answer"] = ground_truth_answer
-            synth_documents = await self._generate_synthetic_data(context)  # List of Synth Docs
-            per_data["ground_truth_documents"] = row_docs
-            row_docs.extend(synth_documents)
+            per_data["question"] = row.get("question", row.get("query"))
+            per_data["target_answer"] = row.get("target_answer", row.get("answer"))
+            per_data["target_file_name"] = row.get("target_file_name", f"temp_docs{idx+1}.pdf")
+            per_data["target_page_no"] = int(row.get("target_page_no", random.randint(1,100)))
+            
+            context = self._create_document(page_content=per_data["target_answer"], file_name=per_data["target_file_name"], page_num=per_data["target_page_no"])
+
+            synth_documents = await self._generate_synthetic_data(per_data["question"], context)  # List of Synth Docs
+            
+            row_docs_docu = [ 
+                self._create_document(page_content=synth_doc, file_name=f"temp_docs{i+1}.pdf", page_num=random.randint(1,100)) for i, synth_doc in enumerate(synth_documents)
+                ]
+            row_docs_docu.append(context)
             # print(f"--- AT {idx + 1}, document length : {len(context)} ---")
             # print("Adding Docs to the Vector Store")
             # copied_context = per_data["ground_truth_documents"].copy()
             # print("Chunking")
-            docs = self.chunker(row_docs) # 합성 문서와 실제 문서 합치는 과정
+            docs = self.chunker(row_docs_docu) # 합성 문서와 실제 문서 합치는 과정
             self.add_documents(docs) # 형식화된 document self.vectorstore에 저장
             benchmark_data.append(per_data)
 
         search_kwargs= self.kwargs.get('k', 5)
         # print("----- Retrieving Documents -----")
         for row in benchmark_data:
-            search_out = self.search(row["query"]) # 실제로 검색된 문서 k개 만큼임 (defalut 5개+1개개)
-            row["predicted_documents"] = search_out # 가장 유사하다고 판단한 문서들 순서서
-            row["retrieved_contexts"] = search_out # 일단 실제 검색된 문장이 없으므로 동일하게 문서로 넣음
+            search_out = self.search(row["question"]) # 실제로 검색된 문서 k개 만큼임 (defalut 5개)
+            row["search_out"] = search_out
+            for i, retrieved_doc in enumerate(search_out):
+                row[f"retrieved_doc{i+1}"] = retrieved_doc.page_content
+                row[f"retrieved_cont{i+1}"] = retrieved_doc.metadata["file_name"]
+                row[f"retrieved_page{i+1}"] = retrieved_doc.metadata["page"]
         
         return benchmark_data
 
@@ -188,23 +206,25 @@ class DataPreprocessor:
                                                                           # 예측된 검색 문서(retrieved_docs), 예측 정답 생성(pred_answer)
         # print("----- Generating Answers -----")
         search_kwargs=self.kwargs.get('k', 5)
-        doc_cols = ["predicted_documents", "ground_truth_documents", "retrieved_contexts"]
+        doc_cols = ["retrieved가 포함되어있는 cols"]
         
         for row in tqdm(benchmark_data, desc="create_generation_bench_data"):
 
-            retrieved_contexts = row["retrieved_contexts"] # [Document]
+            retrieved_contexts = row["search_out"] # [Document]
             retrieved_contexts = [context.page_content for context in retrieved_contexts]
             retrieved_contexts = '\n'.join(retrieved_contexts)
             result = await chain.ainvoke(
                 {
                     "context": retrieved_contexts,
-                    "query": str(row.get("query")),
+                    "query": str(row.get("question")),
                 }
             )
-            result = self.cleaning(result, 'result')
-            row["generated_answer"] = result
-            for col in doc_cols:
-                row[col] = self._serialize_docs(row[col])
+            try:
+                result = self.cleaning(result, 'result')
+            except Exception:
+                pass
+            row["response"] = result
+            del row["search_out"]
         
         bench_df = pd.DataFrame(benchmark_data)
         save_path = Path('.').resolve().parent.parent
@@ -214,7 +234,7 @@ class DataPreprocessor:
         import json
         save_json_path = save_path / "RAG_Evaluation" / "test" / f"bench_{save_benchmark_name}.json"
         with open(save_json_path, "w", encoding="utf-8") as f:
-            json.dump(benchmark_data[0], f, ensure_ascii=False)
+            json.dump(benchmark_data, f, ensure_ascii=False)
         
         response = f'{save_benchmark_name}.csv'
         return response
@@ -254,7 +274,7 @@ async def data_process(data):
     sample_raw_data = await receiver.receive_rawdata_csv(content=data)
     sample_raw_data = sample_raw_data['samples'] 
     ## for test
-    sample_raw_data = sample_raw_data[:1]
+    # sample_raw_data = sample_raw_data
 
     benchmark_data_result_path = await solver.create_generation_bench_data(sample_raw_data, save_benchmark_name="lotte_korag")
 
