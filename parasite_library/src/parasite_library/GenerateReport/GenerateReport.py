@@ -94,9 +94,8 @@ async def main(session_id, model="gpt-4o-mini", embedding_model="text-embedding-
     # )
 
     llm = ChatOpenAI(model=model, api_key=api_key)
-    self.r["benchmark_dataset"]
     solver = GenerateReport(session_id=session_id, llm_model=llm, embedding_model=embeddings)
-    eval_report = await solver.create_report(data=data)
+    eval_report = await solver.create_report()
     return eval_report
 
 
