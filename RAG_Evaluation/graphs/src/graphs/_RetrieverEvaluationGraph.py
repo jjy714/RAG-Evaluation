@@ -33,7 +33,6 @@ class RetrievalEvaluationState(TypedDict):
     
     # --- API HANDLER --- 
     session_id: str
-    endpoint: str
     
     # --- INTERNAL STATE ---
     evaluator: Optional[RetrievalEvaluator]
@@ -76,7 +75,6 @@ def instantiate_evaluator_node(state: RetrievalEvaluationState) -> dict:
         predicted_documents=state["predicted_documents"],
         model=state["model"],
         session_id = state["session_id"],
-        endpoint = state["endpoint"]
     )
     sleep(2)
     return {
