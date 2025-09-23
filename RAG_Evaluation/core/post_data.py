@@ -4,13 +4,6 @@ import httpx
 import asyncio
 from fastapi import FastAPI, HTTPException
 from cache_redis import get_cache, set_cache
-from pydantic import BaseModel
-
-
-class DataPoint(BaseModel):
-    session_id: str
-    endpoint: str
-    payload: Dict[str, Any]  
 
 
     #  retrieval_evaluation_result = {
@@ -57,24 +50,3 @@ class DataPointApiClient:
             except httpx.RequestError as e:
                 print(f"Error sending metric to dashboard: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
-
-    async def send_datapoint(self, payload):
-        try:
-        
-            # metric 거쳐서 나온 score list & error list
-            metric_name = payload['metric_name']
-            score_result = payload["score"]
-            error_list = payload["error_list"]
-
-
-            payload = {"metric_name" : metric_name, "score": score_result, "error_index": error_list}
-
-            self.send_redis(payload=payload)
-
-            for point in score_result: # goekd score list를 for문으로 풀어 UI에 전달
-                result = await self.send_dashboard({"metric_name": metric_name, "score":point})
-
-                return {"status": "success", "response": result}
-
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
