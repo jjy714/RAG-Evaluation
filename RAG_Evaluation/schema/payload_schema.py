@@ -138,10 +138,3 @@ class GraphSchema(BaseModel):
     evaluation_mode: Literal["retrieval_only", "generation_only", "full"] = Field(
         ..., description="The evaluation mode to run."
     )
-
-
-# api/SHARED_PROCESS
-class ShareRule(BaseModel):
-    session_id: str
-    config: UserConfig
-    benchmark_dataset: RetrievalModel | GenerationModel

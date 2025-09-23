@@ -1,7 +1,9 @@
 from langchain_core.documents import Document
 from typing import Dict, List, Any
-from cache_redis import get_cache, set_cache
+from cache_redis import get_cache
 from fastapi import HTTPException
+from core import RedisSessionHandler
+import logging 
 import json 
 
 
@@ -87,9 +89,17 @@ def cleanse_data(data: List[Dict[str, Any]], max_retrieved_docs: int = 5) -> Dic
     
     
 def create_input_payload(request):
-    
-    stored_session_json = get_cache(request.session_id)
+    session_id = request.session_id
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    redis_handler = RedisSessionHandler(session_id=session_id)
+    logger.addHandler(redis_handler)
+    logger.info("COMMENCING data transformation into evaluation graph payloads")
+
+    stored_session_json = get_cache(session_id)
     if not stored_session_json:
+        logger.error("Session not found or has expired.")
         raise HTTPException(status_code=404, detail="Session not found or has expired.")
     session_data = json.loads(stored_session_json)
     
@@ -98,13 +108,14 @@ def create_input_payload(request):
     benchmark_dataset = session_data["benchmark_dataset"]
     
     if not config or not benchmark_dataset:
+        logger.error("Configuration or benchmark_dataset is missing.")
         raise ValueError("Configuration or benchmark_dataset is missing.")
     
     cleansed_data = cleanse_data(benchmark_dataset)
     retrieval_dataset = None 
     generation_dataset = None
-    
-    print("Dataset type is 'RetrievalModel'. Populating retrieval payload.")
+
+    logger.info("Dataset type is 'RetrievalModel'. Populating retrieval payload.")
     retrieval_dataset = {
         "query": cleansed_data.get("query", []),
         "predicted_documents": cleansed_data.get("predicted_documents", []),
@@ -113,7 +124,7 @@ def create_input_payload(request):
         "k": config.get("top_k", ""),
     }
     
-    print("Dataset type is 'GenerationModel'. Populating generation payload.")
+    logger.info("Dataset type is 'GenerationModel'. Populating generation payload.")
     generation_dataset = {
         "query": cleansed_data.get("query", []),
         "ground_truth_answer": cleansed_data.get("ground_truth_answer", []),
@@ -125,13 +136,13 @@ def create_input_payload(request):
     final_payload = {
         "retrieve_metrics": config.get("retrieve_metrics", []),
         "generate_metrics":config.get("generate_metrics", []),
+        "session_id": request.session_id,
         "dataset": {
             "Retrieval": retrieval_dataset,
             "Generation": generation_dataset,
         },
             "evaluation_mode": config.get("evaluation_mode", ""),
         "endpoint": "http://host.docker.internal:8005/get-metric-score",
-        "session_id": request.session_id
     }
-
+    logger.info("Dataset Transformation Complete")
     return final_payload

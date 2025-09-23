@@ -18,26 +18,26 @@ import asyncio
 from core.post_data import DataPointApiClient
 
 # from .accuracy 
-class ApiClient:
-    def __init__(self, session_id: str, endpoint: str):
-        self.endpoint = endpoint
-        self.session_id = session_id
-        print(f"API Client initialized for endpoint: {self.endpoint}")
+# class ApiClient:
+#     def __init__(self, session_id: str, endpoint: str):
+#         self.endpoint = endpoint
+#         self.session_id = session_id
+#         print(f"API Client initialized for endpoint: {self.endpoint}")
         
         
-    def send_redis(self, data, error): 
-        return set_cache(session_id=self.session_id, input=(data, error))
+#     def send_redis(self, data, error): 
+#         return set_cache(session_id=self.session_id, input=(data, error))
 
-    async def send_dashboard(self, payload: Dict[str, Any]):
-        """Sends a single metric data point to the dashboard API."""
-        async with httpx.AsyncClient() as client:    
-            try:
-                response = client.post(self.endpoint, json=payload)
-                response.raise_for_status()
-                print(f"Successfully sent metric: {payload['metric_name']}")
-            except client.RequestException as e:
-                print(f"Error sending metric to dashboard: {e}")
-        return response
+#     async def send_dashboard(self, payload: Dict[str, Any]):
+#         """Sends a single metric data point to the dashboard API."""
+#         async with httpx.AsyncClient() as client:    
+#             try:
+#                 response = client.post(self.endpoint, json=payload)
+#                 response.raise_for_status()
+#                 print(f"Successfully sent metric: {payload['metric_name']}")
+#             except client.RequestException as e:
+#                 print(f"Error sending metric to dashboard: {e}")
+#         return response
 
 
 class AveragingMethod(Enum):
@@ -74,7 +74,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             matching_criteria=matching_criteria
         )
         
-        self.sender = ApiClient(session_id=session_id, endpoint=endpoint)
+        # self.sender = ApiClient(session_id=session_id, endpoint=endpoint)
         self.sender_temp = DataPointApiClient(session_id=session_id, endpoint=endpoint)
         
         self.query = query

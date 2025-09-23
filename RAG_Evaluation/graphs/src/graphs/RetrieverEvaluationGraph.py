@@ -5,10 +5,20 @@ from langchain_core.documents import Document
 from metrics.Retrieval import RetrievalEvaluator
 from time import sleep
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from core import RedisSessionHandler
 import logging
+
+"""
+@TODO 
+ADD A STEP BY STEP GRADUAL BATCHING ALGORITHM
+
+"""
 
 
 METRICS_LIST = ["mrr", "map", "f1", "ndcg", "context_relevance","precision", "recall" ]
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # --- 2. Define the State for the Graph ---
 # We add an 'evaluator' field to hold the instance and 'metrics_to_run_copy' for the router.
@@ -20,6 +30,10 @@ class RetrievalEvaluationState(TypedDict):
     metrics_to_run: List[str]
     model: AzureChatOpenAI | ChatOpenAI | str
     k: int
+
+    # --- API HANDLER --- 
+    session_id: str
+
     # --- INTERNAL STATE ---
     evaluator: Optional[RetrievalEvaluator]
 
@@ -36,6 +50,15 @@ class RetrievalEvaluationState(TypedDict):
     f1_micro: Optional[float]
     f1_macro: Optional[float]
 
+    error_at_mrr_score: Optional[List]
+    error_at_map_score: Optional[List]
+    error_at_ndcg_score: Optional[List]
+    error_at_context_relevance_score: Optional[List]
+
+    error_at_precision_score: Optional[List]
+    error_at_recall_score: Optional[List]
+    error_at_f1_score: Optional[List]
+
     final_results: Dict[str, float]
 
 # --- 3. Define Separate Nodes for Each Task ---
@@ -45,12 +68,17 @@ def instantiate_evaluator_node(state: RetrievalEvaluationState) -> dict:
     This is the first step. It creates the evaluator instance ONCE and
     initializes the results dictionary and metrics list copy.
     """
-    print("\n--- (1) Instantiating Evaluator ---")
+    redis_handler = RedisSessionHandler(session_id=state["session_id"])
+    logger.addHandler(redis_handler)
+
+    logger.info("\n--- (1) Instantiating Evaluator ---")
+
     evaluator = RetrievalEvaluator(
         query=state["query"],
         ground_truth_documents=state["ground_truth_documents"],
         predicted_documents=state["predicted_documents"],
         model=state["model"],
+        session_id = state["session_id"],
     )
     sleep(2)
     return {
@@ -59,49 +87,53 @@ def instantiate_evaluator_node(state: RetrievalEvaluationState) -> dict:
 
 def mrr_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the MRR score."""
-    print("--- (2a) Running MRR Node ---")
+    logger.info("--- (2a) Running MRR Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    mrr_score = evaluator.mrr(k=k)
+    mrr_score, error_at_mrr_score = evaluator.mrr(k=k)
+    #send error at mrr 
     sleep(2)
     return {
+        "mrr_score": mrr_score,
+        "error_at_mrr_score": error_at_mrr_score,
         "mrr_score": mrr_score
         }
 
 def map_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the MAP score."""
-    print("--- (2b) Running MAP Node ---")
+    logger.info("--- (2b) Running MAP Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    map_score = evaluator.map(k=k)
+    map_score, error_at_map_score = evaluator.map(k=k)
     sleep(2)
-    return {"map_score": map_score}
+    return {"map_score": map_score, "error_at_map_score": error_at_map_score}
 
 def f1_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the f1 score."""
-    print("--- (2c) Running f1 Node ---")
+    logger.info("--- (2c) Running f1 Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    f1_micro, f1_macro = evaluator.f1(k=k)
+    f1_micro, f1_macro, error_at_f1_score = evaluator.f1(k=k)
     # logging.DEBUG(f" F1 SCORE DEBUG: {f1_micro, f1_macro}")
 
     return {
         "f1_micro": f1_micro,
-        "f1_macro": f1_macro
+        "f1_macro": f1_macro,
+        "error_at_f1_score": error_at_f1_score
     }
 
 def ndcg_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the NDCG score."""
-    print("--- (2d) Running NDCG Node ---")
+    logger.info("--- (2d) Running NDCG Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    ndcg_score = evaluator.ndcg(k=k)
+    ndcg_score, error_at_ndcg_score = evaluator.ndcg(k=k)
     sleep(2)
-    return {"ndcg_score": ndcg_score}
+    return {"ndcg_score": ndcg_score, "error_at_ndcg_score": error_at_ndcg_score}
 
 def context_relevance_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the Context Relevance score."""
-    print("--- (2e) Running Context Relevance Node ---")
+    logger.info("--- (2e) Running Context Relevance Node ---")
     evaluator = state["evaluator"]
     context_relevance_score = evaluator.context_relevance()
     sleep(2)
@@ -109,33 +141,35 @@ def context_relevance_node(state: RetrievalEvaluationState) -> dict:
 
 def precision_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the Precision@5 score."""
-    print("--- (2f) Running Precision Node ---")
+    logger.info("--- (2f) Running Precision Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    precision_micro, precision_macro = evaluator.precision(k=k)
+    precision_micro, precision_macro, error_at_precision_score = evaluator.precision(k=k)
     # logging.DEBUG(f" PRECISION SCORE DEBUG: {precision_micro, precision_macro}")
     sleep(2)
     return {
         "precision_micro": precision_micro,
-        "precision_macro": precision_macro
+        "precision_macro": precision_macro,
+        "error_at_precision_score": error_at_precision_score
     }
 
 def recall_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the Recall@5 score."""
-    print("--- (2g) Running Recall Node ---")
+    logger.info("--- (2g) Running Recall Node ---")
     evaluator = state["evaluator"]
-    k = state["k"]    
-    recall_micro, recall_macro = evaluator.recall(k=k)
+    k = state["k"]
+    recall_micro, recall_macro, error_at_recall_score = evaluator.recall(k=k)
     # logging.DEBUG(f" RECALL SCORE DEBUG: {recall_micro, recall_macro}")
     sleep(2)
     return {
         "recall_micro": recall_micro,
-        "recall_macro": recall_macro
+        "recall_macro": recall_macro,
+        "error_at_recall_score" : error_at_recall_score
     }
 
 def finalize_node(state: RetrievalEvaluationState) -> dict:
     """Optionally consolidate all scores into final_results."""
-    print("--- (3) Finalizing Results ---")
+    logger.info("--- (3) Finalizing Results ---")
     final_scores = {
         "mrr": state.get("mrr_score"),
         "map": state.get("map_score"),
@@ -155,16 +189,16 @@ def finalize_node(state: RetrievalEvaluationState) -> dict:
 
 
 def parallelize_metrics(state: RetrievalEvaluationState) -> str:
-    print("--- Routing Metrics ---")
+    logger.info("--- Routing Metrics ---")
     
     metric = state["metrics_to_run"]
         
     if not state["metrics_to_run"]:
-        print("→ All metrics computed. Go to finalize.")
+        logger.info("→ All metrics computed. Go to finalize.")
         return "finalize"
     
     if metric not in METRICS_LIST:
-        print("No evaluation metric selected\n Choose from the following metrics list \n{METRICS_LIST}")
+        logger.info("No evaluation metric selected\n Choose from the following metrics list \n{METRICS_LIST}")
     sleep(2)
     return metric
 
