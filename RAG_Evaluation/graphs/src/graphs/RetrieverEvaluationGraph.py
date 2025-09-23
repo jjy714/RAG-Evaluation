@@ -96,7 +96,6 @@ def mrr_node(state: RetrievalEvaluationState) -> dict:
     return {
         "mrr_score": mrr_score,
         "error_at_mrr_score": error_at_mrr_score,
-        "mrr_score": mrr_score
         }
 
 def map_node(state: RetrievalEvaluationState) -> dict:
