@@ -1,3 +1,3 @@
-from ._RetrievalEvaluator import RetrievalEvaluator
+from .RetrievalEvaluator import RetrievalEvaluator
 
-__all__  = ["RetrievalEvaluator"]
+__any__ = ["RetrievalEvaluator"]
