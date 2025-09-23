@@ -155,7 +155,7 @@ async def generate_report(session_id, model="gpt-4o-mini", embedding_model="text
     # )
 
     llm = ChatOpenAI(model=model, api_key=api_key)
-    solver = GenerateReport(session_id=session_id, llm_model=llm, embedding_model=embeddings)
+    solver = GenerateReport(session_id=session_id, llm_model=llm, embedding_model=embeddings, temperature=0)
     eval_report = await solver.create_report()
     return eval_report
 
