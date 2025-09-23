@@ -85,7 +85,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         self.predicted_docs = predicted_documents
         
         
-    def f1(self, k:int=5) -> List[Dict[str, float]]:
+    async def f1(self, k:int=5) -> List[Dict[str, float]]:
         actual_doc = self.actual_docs
         predicted_doc = self.predicted_docs
         
@@ -93,7 +93,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(self.query)):
             temp = self.calculate_f1_score(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k)
             # => send_dashboard()
-            self.sender_temp.send_dashboard(payload={"metric_name": "f1", "score": [temp.get("micro_f1"), temp.get("macro_f1")]})
+            await self.sender_temp.send_dashboard(payload={"metric_name": "f1", "score": [temp.get("micro_f1"), temp.get("macro_f1")]})
 
             temp = (temp.get("micro_f1"), temp.get("macro_f1"), temp.get("zero_score_indexes"))
             print(f"-----[{i}] F1 RESULT: {temp} -----")
@@ -103,7 +103,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         self.sender_temp.send_redis(payload={"metric_name": "f1", "score":  [f1_result[-1][0], f1_result[-1][1]], "error_index": f1_result[-1][2]})
         return f1_result[-1][0], f1_result[-1][1], f1_result[-1][2]
         
-    def mrr(self, k:int=5) -> Dict[str, float]:
+    async def mrr(self, k:int=5) -> Dict[str, float]:
         actual_doc = self.actual_docs
         predicted_doc = self.predicted_docs
         
@@ -111,7 +111,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(self.query)):
             temp = self.calculate_mrr(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k)
             # => send_dashboard()
-            self.sender_temp.send_dashboard(payload={"metric_name": "mrr", "score": temp.get("mrr")})
+            await self.sender_temp.send_dashboard(payload={"metric_name": "mrr", "score": temp.get("mrr")})
 
             temp = (temp.get("mrr"), temp.get("zero_rank_indexes"))
             print(f"-----[{i}] MRR RESULT: {temp} -----")
@@ -130,7 +130,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         self.sender_temp.send_redis(payload={"metric_name": "context_relevance", "score": score})    
         return score
     
-    def map(self, k:int=5) -> Dict[str, float]:
+    async def map(self, k:int=5) -> Dict[str, float]:
         actual_doc = self.actual_docs
         predicted_doc = self.predicted_docs
         
@@ -138,7 +138,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(self.query)):
             temp = self.calculate_map(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k)
             # => send_dashboard()
-            self.sender_temp.send_dashboard(payload={"metric_name": "map", "score": temp.get("map")})\
+            await self.sender_temp.send_dashboard(payload={"metric_name": "map", "score": temp.get("map")})\
 
             temp = (temp.get("map"), temp.get("zero_score_indexes"))
             print(f"-----[{i}] MAP RESULT: {temp} -----")
@@ -148,7 +148,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         return map_result[-1][0], map_result[-1][1]
     
 
-    def precision(self, k:int=5) -> Dict[str, float]:
+    async def precision(self, k:int=5) -> Dict[str, float]:
         actual_doc = self.actual_docs
         predicted_doc = self.predicted_docs
         
@@ -156,7 +156,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(self.query)):
             temp = self.calculate_precision(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k)
             # => send_dashboard()
-            self.sender_temp.send_dashboard(payload={"metric_name": "precision", "score": [temp.get("micro_precision"), temp.get("macro_precision")]})
+            await self.sender_temp.send_dashboard(payload={"metric_name": "precision", "score": [temp.get("micro_precision"), temp.get("macro_precision")]})
 
             temp = (temp.get("micro_precision"), temp.get("macro_precision"), temp.get("zero_score_indexes"))
             print(f"-----[{i}] PRECISION RESULT: {temp} -----")
@@ -165,7 +165,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         self.sender_temp.send_redis(payload={"metric_name": "precision", "score": [precision_result[-1][0], precision_result[-1][1]], "error_index": precision_result[-1][2]})    
         return precision_result[-1][0], precision_result[-1][1], precision_result[-1][2]
     
-    def recall(self, k:int=5) -> Dict[str, float]:
+    async def recall(self, k:int=5) -> Dict[str, float]:
         actual_doc = self.actual_docs
         predicted_doc = self.predicted_docs
         
@@ -173,7 +173,8 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(self.query)):
             temp = self.calculate_recall(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k)
             # => send_dashboard()
-            self.sender_temp.send_dashboard(payload={"metric_name": "recall", "score": [temp.get("micro_recall"), temp.get("macro_recall")]})
+            print("send dashboard: ",(temp.get("micro_recall"), temp.get("macro_recall")) )
+            await self.sender_temp.send_dashboard(payload={"metric_name": "recall", "score": [temp.get("micro_recall"), temp.get("macro_recall")]})
 
             temp = (temp.get("micro_recall"), temp.get("macro_recall"), temp.get("zero_score_indexes"))
             print(f"-----[{i}] RECALL RESULT: {temp} -----")
@@ -182,7 +183,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         self.sender_temp.send_redis(payload={"metric_name": "recall", "score":  [recall_result[-1][0], recall_result[-1][1]], "error_index": recall_result[-1][2]})    
         return recall_result[-1][0], recall_result[-1][1], recall_result[-1][2]
 
-    def ndcg(self, k:int=5) -> Dict[str,float]:
+    async def ndcg(self, k:int=5) -> Dict[str,float]:
         actual_doc = self.actual_docs
         predicted_doc = self.predicted_docs
         
@@ -190,7 +191,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(self.query)):
             temp = self.calculate_ndcg(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k)
             # => send_dashboard()
-            self.sender_temp.send_dashboard(payload={"metric_name": "ndcg", "score": temp.get("ndcg")})
+            await self.sender_temp.send_dashboard(payload={"metric_name": "ndcg", "score": temp.get("ndcg")})
 
             temp = (temp.get("ndcg"), temp.get("zero_score_indexes"))
             print(f"-----[{i}] NDCG RESULT: {temp} -----")

@@ -130,7 +130,7 @@ def create_input_payload(request):
             "Generation": generation_dataset,
         },
             "evaluation_mode": config.get("evaluation_mode", ""),
-        "endpoint": "/",
+        "endpoint": "http://host.docker.internal:8005/get-metric-score",
         "session_id": request.session_id
     }
 

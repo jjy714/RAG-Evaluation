@@ -41,9 +41,11 @@ class DataPointApiClient:
 
     async def send_dashboard(self, payload: Dict[str, Any]):
         # ui endpoint로 데이터 post
+        print("SEND DASHBOARD => ", payload)
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(self.endpoint, json=payload) # payload = {"metric_name": str, "score": int}
+                print("*** POST", self.endpoint, "payload:", payload)
                 response.raise_for_status()
                 print(f"Successfully sent metric: {payload['metric_name']}")
                 return response.json()
