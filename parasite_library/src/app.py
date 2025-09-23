@@ -2,7 +2,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from typing import Dict
 from parasite_library.DataProcessor.DataPreprocessor import data_process
-from parasite_library.GenerateReport.GenerateReport import main
+from parasite_library.GenerateReport.GenerateReport import generate_report
 
 app = FastAPI() 
 
@@ -42,4 +42,4 @@ async def receieve_data(file: UploadFile = File(...)):
 async def get_evaluate_report(payload : Dict):
     session_id = payload["session_id"]
 
-    return {"eval_report": await main(session_id=session_id)}
+    return {"eval_report": await generate_report(session_id=session_id)}

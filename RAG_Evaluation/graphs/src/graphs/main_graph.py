@@ -1,8 +1,9 @@
+from ssl import SSLSession
 from typing import List, Dict, Literal, Union, Optional
 from typing_extensions import TypedDict
 from langgraph.graph import START, END, StateGraph
 from datasets import Dataset
-from .RetrieverEvaluationGraph import create_retrieval_subgraph, RetrievalEvaluationState
+from ._RetrieverEvaluationGraph import create_retrieval_subgraph, RetrievalEvaluationState
 from .GeneratorEvaluationGraph import create_generation_subgraph, GeneratorEvaluationState
 import asyncio
 
@@ -12,6 +13,8 @@ class EvaluationState(TypedDict):
     generate_metrics: Optional[List[str]]
     dataset: Union[Dataset, List]
     evaluation_mode: Literal["retrieval_only", "generation_only", "full"]
+    session_id : str
+    endpoint: str
     retriever_evaluation_result: Optional[Dict]
     generator_evaluation_result: Optional[Dict]
 
@@ -37,14 +40,15 @@ async def evaluate_retrieval(state: EvaluationState) -> Dict:
     retrieve_subgraph = create_retrieval_subgraph(state["retrieve_metrics"])
 
     retrieval_input: RetrievalEvaluationState = {
-        "query":  Optional[state["dataset"]["Retrieval"]["query"]],
+        "query":  state["dataset"]["Retrieval"]["query"],
         "predicted_documents": state["dataset"]["Retrieval"]["predicted_documents"],
         "ground_truth_documents": state["dataset"]["Retrieval"]["ground_truth_documents"],
         "metrics_to_run": state["retrieve_metrics"],
         "model": state["dataset"]["Generation"]["model"],
         "k": state["dataset"]["Retrieval"]["k"],
+        "session_id": state["session_id"],
+        "endpoint": state["endpoint"]
     }
-
     results = await retrieve_subgraph.ainvoke(retrieval_input)
     results = results.get('final_results')
     return {"retriever_evaluation_result": results}

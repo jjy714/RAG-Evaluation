@@ -20,7 +20,7 @@ async def evaluator(evaluation_request: EvaluationRequest):
     response = await main_graph.ainvoke(input=graph_input)
     retrieval_evaluation_result = response.get("retriever_evaluation_result")
     generator_evaluation_result = response.get("generator_evaluation_result")
-    # print(retrieval_evaluation_result, generator_evaluation_result)
+    print(retrieval_evaluation_result, generator_evaluation_result)
     # return JSONResponse(
     #         content={"status": "OK", "evaluate_result": {"retrieval_evaluation_result": retrieval_evaluation_result, "generator_evaluation_result": generator_evaluation_result}},
     #         status_code=200

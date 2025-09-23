@@ -101,7 +101,6 @@ def create_input_payload(request):
         raise ValueError("Configuration or benchmark_dataset is missing.")
     
     cleansed_data = cleanse_data(benchmark_dataset)
-    
     retrieval_dataset = None 
     generation_dataset = None
     
@@ -131,6 +130,8 @@ def create_input_payload(request):
             "Generation": generation_dataset,
         },
             "evaluation_mode": config.get("evaluation_mode", ""),
+        "endpoint": "/",
+        "session_id": request.session_id
     }
 
     return final_payload

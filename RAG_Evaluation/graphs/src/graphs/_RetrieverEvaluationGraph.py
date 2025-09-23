@@ -88,7 +88,7 @@ def mrr_node(state: RetrievalEvaluationState) -> dict:
     print("--- (2a) Running MRR Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    error_at_mrr_score = state["error_at_mrr_score"]
+    # error_at_mrr_score = state["error_at_mrr_score"]
     mrr_score, error_at_mrr_score = evaluator.mrr(k=k)
     #send error at mrr 
     sleep(2)
@@ -101,7 +101,7 @@ def map_node(state: RetrievalEvaluationState) -> dict:
     print("--- (2b) Running MAP Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    error_at_map_score = state["error_at_map_score"]
+    # error_at_map_score = state["error_at_map_score"]
     map_score, error_at_map_score = evaluator.map(k=k)
     sleep(2)
     return {"map_score": map_score}
@@ -110,7 +110,7 @@ def f1_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the f1 score."""
     print("--- (2c) Running f1 Node ---")
     evaluator = state["evaluator"]
-    error_at_f1_score = state["error_at_f1_score"]
+    # error_at_f1_score = state["error_at_f1_score"]
     k = state["k"]
     f1_micro, f1_macro, error_at_f1_score = evaluator.f1(k=k)
     # logging.DEBUG(f" F1 SCORE DEBUG: {f1_micro, f1_macro}")
@@ -125,7 +125,7 @@ def ndcg_node(state: RetrievalEvaluationState) -> dict:
     print("--- (2d) Running NDCG Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    error_at_ndcg_score = state["error_at_ndcg_score"]
+    # error_at_ndcg_score = state["error_at_ndcg_score"]
     ndcg_score, error_at_ndcg_score = evaluator.ndcg(k=k)
     sleep(2)
     return {"ndcg_score": ndcg_score}
@@ -143,7 +143,8 @@ def precision_node(state: RetrievalEvaluationState) -> dict:
     print("--- (2f) Running Precision Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    error_at_precision_score = state["error_at_precision_score"]
+    # error_at_precision_score = state["error_at_precision_score"]
+    print('evaluator.precision(k=k): ',evaluator.precision(k=k))
     precision_micro, precision_macro, error_at_precision_score = evaluator.precision(k=k)
     # logging.DEBUG(f" PRECISION SCORE DEBUG: {precision_micro, precision_macro}")
     sleep(2)
@@ -157,7 +158,7 @@ def recall_node(state: RetrievalEvaluationState) -> dict:
     print("--- (2g) Running Recall Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    error_at_recall_score = state["error_at_recall_score"]
+    # error_at_recall_score = state["error_at_recall_score"]
     recall_micro, recall_macro, error_at_recall_score = evaluator.recall(k=k)
     # logging.DEBUG(f" RECALL SCORE DEBUG: {recall_micro, recall_macro}")
     sleep(2)

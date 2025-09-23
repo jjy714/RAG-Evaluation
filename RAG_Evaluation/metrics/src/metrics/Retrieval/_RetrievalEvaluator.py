@@ -100,8 +100,8 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             # self.sender.send_redis() 
             f1_result.append(temp)
         
-        self.sender_temp.send_redis(data={"metric_name": "f1", "score":  f1_result[-1][0], "error_index": f1_result[-1][1]})
-        return f1_result[-1][0], f1_result[-1][1]
+        self.sender_temp.send_redis(payload={"metric_name": "f1", "score":  [f1_result[-1][0], f1_result[-1][1]], "error_index": f1_result[-1][2]})
+        return f1_result[-1][0], f1_result[-1][1], f1_result[-1][2]
         
     def mrr(self, k:int=5) -> Dict[str, float]:
         actual_doc = self.actual_docs
@@ -117,7 +117,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             print(f"-----[{i}] MRR RESULT: {temp} -----")
             mrr_result.append(temp)
             
-        self.sender_temp.send_redis(data={"metric_name": "mrr", "score":  mrr_result[-1][0], "error_index": mrr_result[-1][1]})    
+        self.sender_temp.send_redis(payload={"metric_name": "mrr", "score":  mrr_result[-1][0], "error_index": mrr_result[-1][1]})    
         return mrr_result[-1][0], mrr_result[-1][1] # mrr_score, error_at_mrr_score
         
     
@@ -127,7 +127,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             user_input=self.query,
             retrieved_contexts=self.predicted_docs
             )
-        self.sender_temp.send_redis(data={"metric_name": "context_relevance", "score": score})    
+        self.sender_temp.send_redis(payload={"metric_name": "context_relevance", "score": score})    
         return score
     
     def map(self, k:int=5) -> Dict[str, float]:
@@ -144,7 +144,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             print(f"-----[{i}] MAP RESULT: {temp} -----")
             map_result.append(temp)
 
-        self.sender_temp.send_redis(data={"metric_name": "map", "score":  map_result[-1][0], "error_index": map_result[-1][1]})    
+        self.sender_temp.send_redis(payload={"metric_name": "map", "score":  map_result[-1][0], "error_index": map_result[-1][1]})    
         return map_result[-1][0], map_result[-1][1]
     
 
@@ -162,8 +162,8 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             print(f"-----[{i}] PRECISION RESULT: {temp} -----")
             precision_result.append(temp)
         
-        self.sender_temp.send_redis(data={"metric_name": "precision", "score":  precision_result[-1][0], "error_index": precision_result[-1][1]})    
-        return precision_result[-1][0], precision_result[-1][1]
+        self.sender_temp.send_redis(payload={"metric_name": "precision", "score": [precision_result[-1][0], precision_result[-1][1]], "error_index": precision_result[-1][2]})    
+        return precision_result[-1][0], precision_result[-1][1], precision_result[-1][2]
     
     def recall(self, k:int=5) -> Dict[str, float]:
         actual_doc = self.actual_docs
@@ -179,8 +179,8 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             print(f"-----[{i}] RECALL RESULT: {temp} -----")
             recall_result.append(temp)
         
-        self.sender_temp.send_redis(data={"metric_name": "recall", "score":  recall_result[-1][0], "error_index": recall_result[-1][1]})    
-        return recall_result[-1][0], recall_result[-1][1]
+        self.sender_temp.send_redis(payload={"metric_name": "recall", "score":  [recall_result[-1][0], recall_result[-1][1]], "error_index": recall_result[-1][2]})    
+        return recall_result[-1][0], recall_result[-1][1], recall_result[-1][2]
 
     def ndcg(self, k:int=5) -> Dict[str,float]:
         actual_doc = self.actual_docs
@@ -196,5 +196,5 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             print(f"-----[{i}] NDCG RESULT: {temp} -----")
             ndcg_result.append(temp)
     
-        self.sender_temp.send_redis(data={"metric_name": "ndcg", "score":  ndcg_result[-1][0], "error_index": ndcg_result[-1][1]})   
+        self.sender_temp.send_redis(payload={"metric_name": "ndcg", "score":  ndcg_result[-1][0], "error_index": ndcg_result[-1][1]})   
         return ndcg_result[-1][0], ndcg_result[-1][1]
