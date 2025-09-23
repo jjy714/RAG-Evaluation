@@ -125,7 +125,6 @@ class GenerateReport:
         ).sample(n=3) .to_dicts() # error example 3개씩만
         
     async def create_report(self): 
-        # TODO:  data는 UI에 저장되어있다고 가정
         evaluate_result, dataset = self._load_eval_result()
         for metric, score_dict in evaluate_result.items():
             score_dict["error_index"] = self._get_error_query_docs(data=dataset, error_index=score_dict["error_index"])
