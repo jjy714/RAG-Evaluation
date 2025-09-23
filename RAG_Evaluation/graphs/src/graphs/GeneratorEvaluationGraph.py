@@ -28,6 +28,9 @@ class GeneratorEvaluationState(TypedDict):
     generated_answer: List
     model: ChatOpenAI | AzureChatOpenAI | str
     
+    # --- API HANDLER --- 
+    session_id: str
+    
     evaluator: Optional[GenerationEvaluator]
 
     rouge_score: Optional[float]
@@ -51,6 +54,7 @@ def instantiate_evaluator_node(state: GeneratorEvaluationState) -> dict:
         retrieved_contexts=state["retrieved_contexts"],
         generated_answer=state["generated_answer"],
         model=state["model"],
+        session_id = state["session_id"],
     )
     sleep(2)
     return {

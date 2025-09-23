@@ -10,34 +10,16 @@ from langchain_openai import ChatOpenAI, AzureChatOpenAI
 # from .response_relevancy import response_relevancy
 from typing import Union, List, Dict, Optional, Any
 from enum import Enum
-from cache_redis import set_cache
-import httpx
-import asyncio
+from core import RedisSessionHandler
 
-# TODO: path 변경
-from core.post_data import DataPointApiClient
+from core import DataPointApiClient, RedisSessionHandler
+import logging
 
-# from .accuracy 
-# class ApiClient:
-#     def __init__(self, session_id: str, endpoint: str):
-#         self.endpoint = endpoint
-#         self.session_id = session_id
-#         print(f"API Client initialized for endpoint: {self.endpoint}")
-        
-        
-#     def send_redis(self, data, error): 
-#         return set_cache(session_id=self.session_id, input=(data, error))
+DASHBOARD_ENDPOINT = "http://localhost:8000/v1/dashboard"
 
-#     async def send_dashboard(self, payload: Dict[str, Any]):
-#         """Sends a single metric data point to the dashboard API."""
-#         async with httpx.AsyncClient() as client:    
-#             try:
-#                 response = client.post(self.endpoint, json=payload)
-#                 response.raise_for_status()
-#                 print(f"Successfully sent metric: {payload['metric_name']}")
-#             except client.RequestException as e:
-#                 print(f"Error sending metric to dashboard: {e}")
-#         return response
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 
 class AveragingMethod(Enum):
@@ -58,10 +40,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             predicted_documents: List[List[Document]],
             model: ChatOpenAI | AzureChatOpenAI,
             
-            session_id: str, 
-            endpoint: str,
-            
-                        
+            session_id: str,              
             match_method: str = "text", 
             averaging_method: Union[str, AveragingMethod] = AveragingMethod.BOTH,
             matching_criteria: MatchingCriteria = MatchingCriteria.ALL,
@@ -74,13 +53,13 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             matching_criteria=matching_criteria
         )
         
-        # self.sender = ApiClient(session_id=session_id, endpoint=endpoint)
-        self.sender_temp = DataPointApiClient(session_id=session_id, endpoint=endpoint)
+
+        self.sender = DataPointApiClient(session_id=session_id, endpoint=DASHBOARD_ENDPOINT)
         
         self.query = query
         self.model = model
         self.predicted_docs = predicted_documents
-        
+
         self.actual_docs = ground_truth_documents
         self.predicted_docs = predicted_documents
         
@@ -93,14 +72,13 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(self.query)):
             temp = self.calculate_f1_score(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k)
             # => send_dashboard()
-            await self.sender_temp.send_dashboard(payload={"metric_name": "f1", "score": [temp.get("micro_f1"), temp.get("macro_f1")]})
+            await self.sender.send_dashboard(payload={"metric_name": "f1", "score": [temp.get("micro_f1"), temp.get("macro_f1")]})
 
             temp = (temp.get("micro_f1"), temp.get("macro_f1"), temp.get("zero_score_indexes"))
-            print(f"-----[{i}] F1 RESULT: {temp} -----")
-            # self.sender.send_redis() 
+            logger.info(f"-----[{i}] F1 RESULT: {temp} -----")
             f1_result.append(temp)
         
-        self.sender_temp.send_redis(payload={"metric_name": "f1", "score":  [f1_result[-1][0], f1_result[-1][1]], "error_index": f1_result[-1][2]})
+        self.sender.send_redis(payload={"metric_name": "f1", "score":  [f1_result[-1][0], f1_result[-1][1]], "error_index": f1_result[-1][2]})
         return f1_result[-1][0], f1_result[-1][1], f1_result[-1][2]
         
     async def mrr(self, k:int=5) -> Dict[str, float]:
@@ -111,13 +89,13 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(self.query)):
             temp = self.calculate_mrr(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k)
             # => send_dashboard()
-            await self.sender_temp.send_dashboard(payload={"metric_name": "mrr", "score": temp.get("mrr")})
+            await self.sender.send_dashboard(payload={"metric_name": "mrr", "score": temp.get("mrr")})
 
             temp = (temp.get("mrr"), temp.get("zero_rank_indexes"))
-            print(f"-----[{i}] MRR RESULT: {temp} -----")
+            logger.info(f"-----[{i}] MRR RESULT: {temp} -----")
             mrr_result.append(temp)
             
-        self.sender_temp.send_redis(payload={"metric_name": "mrr", "score":  mrr_result[-1][0], "error_index": mrr_result[-1][1]})    
+        self.sender.send_redis(payload={"metric_name": "mrr", "score":  mrr_result[-1][0], "error_index": mrr_result[-1][1]})    
         return mrr_result[-1][0], mrr_result[-1][1] # mrr_score, error_at_mrr_score
         
     
@@ -127,7 +105,7 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
             user_input=self.query,
             retrieved_contexts=self.predicted_docs
             )
-        self.sender_temp.send_redis(payload={"metric_name": "context_relevance", "score": score})    
+        self.sender.send_redis(payload={"metric_name": "context_relevance", "score": score})    
         return score
     
     async def map(self, k:int=5) -> Dict[str, float]:
@@ -138,13 +116,13 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(self.query)):
             temp = self.calculate_map(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k)
             # => send_dashboard()
-            await self.sender_temp.send_dashboard(payload={"metric_name": "map", "score": temp.get("map")})\
+            await self.sender.send_dashboard(payload={"metric_name": "map", "score": temp.get("map")})\
 
             temp = (temp.get("map"), temp.get("zero_score_indexes"))
-            print(f"-----[{i}] MAP RESULT: {temp} -----")
+            logger.info(f"-----[{i}] MAP RESULT: {temp} -----")
             map_result.append(temp)
 
-        self.sender_temp.send_redis(payload={"metric_name": "map", "score":  map_result[-1][0], "error_index": map_result[-1][1]})    
+        self.sender.send_redis(payload={"metric_name": "map", "score":  map_result[-1][0], "error_index": map_result[-1][1]})    
         return map_result[-1][0], map_result[-1][1]
     
 
@@ -156,13 +134,13 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(self.query)):
             temp = self.calculate_precision(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k)
             # => send_dashboard()
-            await self.sender_temp.send_dashboard(payload={"metric_name": "precision", "score": [temp.get("micro_precision"), temp.get("macro_precision")]})
+            await self.sender.send_dashboard(payload={"metric_name": "precision", "score": [temp.get("micro_precision"), temp.get("macro_precision")]})
 
             temp = (temp.get("micro_precision"), temp.get("macro_precision"), temp.get("zero_score_indexes"))
-            print(f"-----[{i}] PRECISION RESULT: {temp} -----")
+            logger.info(f"-----[{i}] PRECISION RESULT: {temp} -----")
             precision_result.append(temp)
         
-        self.sender_temp.send_redis(payload={"metric_name": "precision", "score": [precision_result[-1][0], precision_result[-1][1]], "error_index": precision_result[-1][2]})    
+        self.sender.send_redis(payload={"metric_name": "precision", "score": [precision_result[-1][0], precision_result[-1][1]], "error_index": precision_result[-1][2]})    
         return precision_result[-1][0], precision_result[-1][1], precision_result[-1][2]
     
     async def recall(self, k:int=5) -> Dict[str, float]:
@@ -173,14 +151,13 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(self.query)):
             temp = self.calculate_recall(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k)
             # => send_dashboard()
-            print("send dashboard: ",(temp.get("micro_recall"), temp.get("macro_recall")) )
-            await self.sender_temp.send_dashboard(payload={"metric_name": "recall", "score": [temp.get("micro_recall"), temp.get("macro_recall")]})
+            await self.sender.send_dashboard(payload={"metric_name": "recall", "score": [temp.get("micro_recall"), temp.get("macro_recall")]})
 
             temp = (temp.get("micro_recall"), temp.get("macro_recall"), temp.get("zero_score_indexes"))
-            print(f"-----[{i}] RECALL RESULT: {temp} -----")
+            logger.info(f"-----[{i}] RECALL RESULT: {temp} -----")
             recall_result.append(temp)
         
-        self.sender_temp.send_redis(payload={"metric_name": "recall", "score":  [recall_result[-1][0], recall_result[-1][1]], "error_index": recall_result[-1][2]})    
+        self.sender.send_redis(payload={"metric_name": "recall", "score":  [recall_result[-1][0], recall_result[-1][1]], "error_index": recall_result[-1][2]})    
         return recall_result[-1][0], recall_result[-1][1], recall_result[-1][2]
 
     async def ndcg(self, k:int=5) -> Dict[str,float]:
@@ -191,11 +168,11 @@ class RetrievalEvaluator(OfflineRetrievalEvaluators):
         for i in range(len(self.query)):
             temp = self.calculate_ndcg(actual_docs=actual_doc[:i], predicted_docs=predicted_doc[:i], k=k)
             # => send_dashboard()
-            await self.sender_temp.send_dashboard(payload={"metric_name": "ndcg", "score": temp.get("ndcg")})
+            await self.sender.send_dashboard(payload={"metric_name": "ndcg", "score": temp.get("ndcg")})
 
             temp = (temp.get("ndcg"), temp.get("zero_score_indexes"))
-            print(f"-----[{i}] NDCG RESULT: {temp} -----")
+            logger.info(f"-----[{i}] NDCG RESULT: {temp} -----")
             ndcg_result.append(temp)
     
-        self.sender_temp.send_redis(payload={"metric_name": "ndcg", "score":  ndcg_result[-1][0], "error_index": ndcg_result[-1][1]})   
+        self.sender.send_redis(payload={"metric_name": "ndcg", "score":  ndcg_result[-1][0], "error_index": ndcg_result[-1][1]})   
         return ndcg_result[-1][0], ndcg_result[-1][1]

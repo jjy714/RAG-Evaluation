@@ -5,7 +5,7 @@ from langchain_core.documents import Document
 from metrics.Retrieval import RetrievalEvaluator
 from time import sleep
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
-# from core.asdf import DataSender
+from core import RedisSessionHandler
 import logging
 
 
@@ -14,11 +14,13 @@ import logging
 
 ADD A STEP BY STEP GRADUAL BATCHING ALGORITHM
 
-
 """
 
     
 METRICS_LIST = ["mrr", "map", "f1", "ndcg", "context_relevance","precision", "recall" ]
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # --- 2. Define the State for the Graph ---
 # We add an 'evaluator' field to hold the instance and 'metrics_to_run_copy' for the router.
@@ -68,7 +70,7 @@ def instantiate_evaluator_node(state: RetrievalEvaluationState) -> dict:
     This is the first step. It creates the evaluator instance ONCE and
     initializes the results dictionary and metrics list copy.
     """
-    print("\n--- (1) Instantiating Evaluator ---")
+    logger.info("\n--- (1) Instantiating Evaluator ---")
     evaluator = RetrievalEvaluator(
         query=state["query"],
         ground_truth_documents=state["ground_truth_documents"],
@@ -83,54 +85,52 @@ def instantiate_evaluator_node(state: RetrievalEvaluationState) -> dict:
 
 async def mrr_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the MRR score."""
-    print("--- (2a) Running MRR Node ---")
+    logger.info("--- (2a) Running MRR Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    # error_at_mrr_score = state["error_at_mrr_score"]
     mrr_score, error_at_mrr_score = await evaluator.mrr(k=k)
     #send error at mrr 
     sleep(2)
     return {
-        "mrr_score": mrr_score
+        "mrr_score": mrr_score,
+        "error_at_mrr_score": error_at_mrr_score,
         }
 
 async def map_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the MAP score."""
-    print("--- (2b) Running MAP Node ---")
+    logger.info("--- (2b) Running MAP Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    # error_at_map_score = state["error_at_map_score"]
     map_score, error_at_map_score = await evaluator.map(k=k)
     sleep(2)
-    return {"map_score": map_score}
+    return {"map_score": map_score, "error_at_map_score": error_at_map_score}
 
 async def f1_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the f1 score."""
-    print("--- (2c) Running f1 Node ---")
+    logger.info("--- (2c) Running f1 Node ---")
     evaluator = state["evaluator"]
-    # error_at_f1_score = state["error_at_f1_score"]
     k = state["k"]
     f1_micro, f1_macro, error_at_f1_score = await evaluator.f1(k=k)
     # logging.DEBUG(f" F1 SCORE DEBUG: {f1_micro, f1_macro}")
 
     return {
         "f1_micro": f1_micro,
-        "f1_macro": f1_macro
+        "f1_macro": f1_macro,
+        "error_at_f1_score": error_at_f1_score
     }
 
 async def ndcg_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the NDCG score."""
-    print("--- (2d) Running NDCG Node ---")
+    logger.info("--- (2d) Running NDCG Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    # error_at_ndcg_score = state["error_at_ndcg_score"]
     ndcg_score, error_at_ndcg_score = await evaluator.ndcg(k=k)
     sleep(2)
-    return {"ndcg_score": ndcg_score}
+    return {"ndcg_score": ndcg_score, "error_at_ndcg_score": error_at_ndcg_score}
 
 async def context_relevance_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the Context Relevance score."""
-    print("--- (2e) Running Context Relevance Node ---")
+    logger.info("--- (2e) Running Context Relevance Node ---")
     evaluator = state["evaluator"]
     context_relevance_score = await evaluator.context_relevance()
     sleep(2)
@@ -138,35 +138,35 @@ async def context_relevance_node(state: RetrievalEvaluationState) -> dict:
 
 async def precision_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the Precision@5 score."""
-    print("--- (2f) Running Precision Node ---")
+    logger.info("--- (2f) Running Precision Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    # error_at_precision_score = state["error_at_precision_score"]
     precision_micro, precision_macro, error_at_precision_score = await evaluator.precision(k=k)
     # logging.DEBUG(f" PRECISION SCORE DEBUG: {precision_micro, precision_macro}")
     sleep(2)
     return {
         "precision_micro": precision_micro,
-        "precision_macro": precision_macro
+        "precision_macro": precision_macro,
+        "error_at_precision_score": error_at_precision_score
     }
 
 async def recall_node(state: RetrievalEvaluationState) -> dict:
     """Node to calculate only the Recall@5 score."""
-    print("--- (2g) Running Recall Node ---")
+    logger.info("--- (2g) Running Recall Node ---")
     evaluator = state["evaluator"]
     k = state["k"]
-    # error_at_recall_score = state["error_at_recall_score"]
     recall_micro, recall_macro, error_at_recall_score = await evaluator.recall(k=k)
     # logging.DEBUG(f" RECALL SCORE DEBUG: {recall_micro, recall_macro}")
     sleep(2)
     return {
         "recall_micro": recall_micro,
-        "recall_macro": recall_macro
+        "recall_macro": recall_macro,
+        "error_at_recall_score" : error_at_recall_score
     }
 
 def finalize_node(state: RetrievalEvaluationState) -> dict:
     """Optionally consolidate all scores into final_results."""
-    print("--- (3) Finalizing Results ---")
+    logger.info("--- (3) Finalizing Results ---")
     final_scores = {
         "mrr": state.get("mrr_score"),
         "map": state.get("map_score"),
@@ -186,7 +186,7 @@ def finalize_node(state: RetrievalEvaluationState) -> dict:
 
 
 def parallelize_metrics(state: RetrievalEvaluationState) -> str:
-    print("--- Routing Metrics ---")
+    logger.info("--- Routing Metrics ---")
     
     metric = state["metrics_to_run"]
         

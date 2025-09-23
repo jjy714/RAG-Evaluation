@@ -2,7 +2,7 @@ from langchain_core.documents import Document
 from typing import Dict, List, Any
 from cache_redis import get_cache
 from fastapi import HTTPException
-from core import RedisSessionHandler
+from core.log_config import RedisSessionHandler
 import logging 
 import json 
 
@@ -142,7 +142,6 @@ def create_input_payload(request):
             "Generation": generation_dataset,
         },
             "evaluation_mode": config.get("evaluation_mode", ""),
-        "endpoint": "http://host.docker.internal:8005/get-metric-score",
     }
     logger.info("Dataset Transformation Complete")
     return final_payload

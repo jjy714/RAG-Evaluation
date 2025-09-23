@@ -28,7 +28,8 @@ class GenerationEvaluator:
             ground_truth_answer: List[List[Document | str ]],
             retrieved_contexts: List[List[Document | str]],
             generated_answer: List[str],
-            model: str
+            model: str,
+            session_id: str, 
             ):
         self.query = query
         self.ground_truth_answer = ground_truth_answer

@@ -3,7 +3,7 @@ from typing import List, Dict, Literal, Union, Optional
 from typing_extensions import TypedDict
 from langgraph.graph import START, END, StateGraph
 from datasets import Dataset
-from .RetrieverEvaluationGraph import create_retrieval_subgraph, RetrievalEvaluationState
+from ._RetrieverEvaluationGraph import create_retrieval_subgraph, RetrievalEvaluationState
 from .GeneratorEvaluationGraph import create_generation_subgraph, GeneratorEvaluationState
 from core import RedisSessionHandler
 import logging
@@ -53,8 +53,7 @@ async def evaluate_retrieval(state: EvaluationState) -> Dict:
         "metrics_to_run": state["retrieve_metrics"],
         "model": state["dataset"]["Generation"]["model"],
         "k": state["dataset"]["Retrieval"]["k"],
-        "session_id": state["session_id"],
-        "endpoint": state["endpoint"]
+        "session_id": state["session_id"]
     }
     results = await retrieve_subgraph.ainvoke(retrieval_input)
     results = results.get('final_results')
@@ -72,7 +71,8 @@ async def evaluate_generation(state: EvaluationState) -> Dict:
         "retrieved_contexts": state["dataset"]["Generation"]["retrieved_contexts"],
         "generated_answer": state["dataset"]["Generation"]["generated_answer"],
         "metrics_to_run": state["generate_metrics"],
-        "model": state["dataset"]["Generation"]["model"]
+        "model": state["dataset"]["Generation"]["model"],
+        "session_id": state["session_id"]
     }
     results = await generate_subgraph.ainvoke(generation_input)
     results = results.get('final_results')
