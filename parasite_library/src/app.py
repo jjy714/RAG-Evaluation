@@ -35,8 +35,6 @@ async def receieve_data(file: UploadFile = File(...)):
 
     
     return {"status": "ok", "data": preprocessed_data}
-# src
-#  uv run uvicorn app:app --reload --port 8001
 
 @app.post("/get-evaluate-report")
 async def get_evaluate_report(payload : Dict):
