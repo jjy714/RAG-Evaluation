@@ -188,8 +188,8 @@ class DataPreprocessor:
             search_out = self.search(row["question"]) # 실제로 검색된 문서 k개 만큼임 (defalut 5개)
             row["search_out"] = search_out
             for i, retrieved_doc in enumerate(search_out):
-                row[f"retrieved_doc{i+1}"] = retrieved_doc.page_content
-                row[f"retrieved_cont{i+1}"] = retrieved_doc.metadata["file_name"]
+                row[f"retrieved_doc{i+1}"] = retrieved_doc.metadata["file_name"]
+                row[f"retrieved_cont{i+1}"] = retrieved_doc.page_content
                 row[f"retrieved_page{i+1}"] = retrieved_doc.metadata["page"]
         
         return benchmark_data
@@ -228,11 +228,11 @@ class DataPreprocessor:
         
         bench_df = pd.DataFrame(benchmark_data)
         save_path = Path('.').resolve().parent.parent
-        save_csv_path = save_path /  "RAG_Evaluation" / "test" / f"bench_{save_benchmark_name}.csv"
+        save_csv_path = save_path /  "RAG_Evaluation" / "data" / f"bench_{save_benchmark_name}.csv"
         bench_df.to_csv(save_csv_path, index=False)
         
         import json
-        save_json_path = save_path / "RAG_Evaluation" / "test" / f"bench_{save_benchmark_name}.json"
+        save_json_path = save_path / "RAG_Evaluation" / "data" / f"bench_{save_benchmark_name}.json"
         with open(save_json_path, "w", encoding="utf-8") as f:
             json.dump(benchmark_data, f, ensure_ascii=False)
         
@@ -274,7 +274,7 @@ async def data_process(data):
     sample_raw_data = await receiver.receive_rawdata_csv(content=data)
     sample_raw_data = sample_raw_data['samples'] 
     ## for test
-    # sample_raw_data = sample_raw_data
+    sample_raw_data = sample_raw_data[:500]
 
     benchmark_data_result_path = await solver.create_generation_bench_data(sample_raw_data, save_benchmark_name="lotte_korag")
 
