@@ -13,6 +13,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.messages import SystemMessage, HumanMessage
 from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException
 from dotenv import load_dotenv
+from collections import defaultdict
 
 from parasite_library.DataProcessor.RecieveData import DataReceiver
 
@@ -105,37 +106,66 @@ class GenerateReport:
         dataset = session_data["benchmark_dataset"]
         return evaluate_result, dataset
         
-    def _get_error_query_docs(self, data: Any, error_index: list[int]):
+    def _get_error_query_docs(self, data: Any, error_index: list[int], n: int):
         if isinstance(data, dict) and "records" in data:
             data = data["records"]
             data = self._cleanse_data(data)
         data = pl.DataFrame(data)
         error_rows = data[error_index]
         return error_rows.select(
-            ["query", "predicted_documents", "ground_truth_documents"]
-        ).sample(n=3).to_dicts() # error example 3개씩만
-        
-    async def create_report(self): 
-        evaluate_result, dataset = self._load_eval_result()
-        for metric, score_dict in evaluate_result.items():
-            score_dict["error_index"] = self._get_error_query_docs(data=dataset, error_index=score_dict["error_index"])
-        
-        script_dir = Path(__file__).parent.parent.resolve()
-        print("final eval result: ", evaluate_result)
-        prompt = script_dir / "Prompts" / "REPORT_PROMPT.txt"
-        prompt = prompt.read_text(encoding="utf-8")
-        prompt = prompt.format(metric_result=evaluate_result)
+            ["query", "predicted_documents", "ground_truth_documents", "generated_answer", "ground_truth_answer"]
+        ).sample(n).to_dicts() # error example 3개씩만
 
-        eval_report = await self.llm_model.ainvoke(
+
+    async def summarize_evaluation(self, prompt_name, **kwargs):
+        script_dir = Path(__file__).parent.parent.resolve()
+        prompt = script_dir / "Prompts" / f"{prompt_name}.txt"
+        prompt = prompt.read_text(encoding="utf-8")
+        safe_kwargs = defaultdict(str, kwargs)
+        prompt = prompt.format_map(safe_kwargs)
+        print("## prompt: \n", prompt)
+        result = await self.llm_model.ainvoke(
             [
                 SystemMessage(content=prompt),
             ]
         )
-        eval_report = eval_report.content
+        result = result.content
+        return result
+
+
+    async def create_individual_report(self, n): 
+        evaluate_result, dataset = self._load_eval_result()
+        final_report_dict = {}
+
+        for metric, score_dict in evaluate_result.items():
+            score_dict["error_index"] = self._get_error_query_docs(data=dataset, error_index=score_dict["error_index"], n=n)
+            eval_report = await self.summarize_evaluation(prompt_name="ERROR_CASE_ANALYSIS_PROMPT", metric=metric, score=score_dict["score"], error=score_dict["error_index"])
+            final_report_dict[metric] = {"score": score_dict["score"], "anaysis_text": eval_report}
+
+        return final_report_dict
+
+
+    def merge_report(self, reports_dict):
+        FORMAT = '[성능 지표 {idx}]\n* **지표명:** {metric_name}\n* **성능 점수:** {metric_score}\n* **LLM 분석 의견:**\n"""{llm_analysis}"""\n---'
+        result = ''
+        for idx, (metric, score_dict) in enumerate(reports_dict.items()):
+            output = FORMAT.format(idx=idx+1, metric_name=metric, metric_score=score_dict["score"], llm_analysis=score_dict["anaysis_text"])
+            result += f"\n{output}"
+        return result
+   
+
+    async def create_final_report(self, num_use_errorcase):
+        final_report_dict = await self.create_individual_report(n=num_use_errorcase)
+        all_summarized_result = self.merge_report(final_report_dict)
+        eval_report = await self.summarize_evaluation(prompt_name="FINAL_REPORT_PROMPT", all_summarized_result=all_summarized_result)
         return eval_report
 
+
+
+
+
 ## main
-async def generate_report(session_id, model="gpt-4o-mini", embedding_model="text-embedding-3-large"):
+async def generate_report(session_id, model="gpt-4o-mini", embedding_model="text-embedding-3-large", num_use_errorcase=3):
     embeddings = OpenAIEmbeddings(model=embedding_model, api_key=api_key)
     # embeddings = None
     # llm = ChatOpenAI(
@@ -144,9 +174,9 @@ async def generate_report(session_id, model="gpt-4o-mini", embedding_model="text
     #     base_url="http://localhost:8000/v1",
     # )
 
-    llm = ChatOpenAI(model=model, api_key=api_key)
-    solver = GenerateReport(session_id=session_id, llm_model=llm, embedding_model=embeddings, temperature=0)
-    eval_report = await solver.create_report()
+    llm = ChatOpenAI(model=model, api_key=api_key, temperature=0)
+    solver = GenerateReport(session_id=session_id, llm_model=llm, embedding_model=embeddings)
+    eval_report = await solver.create_final_report(num_use_errorcase=num_use_errorcase)
     return eval_report
 
 
