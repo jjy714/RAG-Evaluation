@@ -36,17 +36,8 @@ class GenerateReport:
             self.r.ping()
         except redis.exceptions.ConnectionError as e:
             print(f"Could not connect to Redis: {e}")
-# {"metric_result"
-#      retrieval_evaluation_result = {
-#     "mrr": {"score": mrr_score, "error_index": error_at_mrr_score},
-#     "map": {"score": map_score, "error_index": error_at_map_score},
-#     "f1": {"score": f1_score, "error_index": error_at_f1_score},
-#     "ndcg": {"score": ndcg_score, "error_index": error_at_ndcg_score},
-#     "context_relevance": {"score": context_relevance_score},
-#     "precision": {"score": precision_score, "error_index": error_at_precision_score},
-#     "recall": {"score": recall_score, "error_index": error_at_recall_score},
-#     }
-# }
+
+
     def _create_document(self, page_content: str, file_name: str | None, page_num: int | None) -> Document | None:
         if not page_content:
             return None
@@ -58,7 +49,7 @@ class GenerateReport:
         clean_metadata = {k: v for k, v in metadata.items() if v is not None}
         return  {"page_content": page_content, "metadata": clean_metadata}
 
-    def cleanse_data(self, data: List[Dict[str, Any]], max_retrieved_docs: int = 5) -> Dict[str, List]:
+    def _cleanse_data(self, data: List[Dict[str, Any]], max_retrieved_docs: int = 5) -> Dict[str, List]:
         queries = []
         predicted_documents_batch = []
         ground_truth_documents_batch = []
@@ -117,12 +108,12 @@ class GenerateReport:
     def _get_error_query_docs(self, data: Any, error_index: list[int]):
         if isinstance(data, dict) and "records" in data:
             data = data["records"]
-            data = self.cleanse_data(data)
+            data = self._cleanse_data(data)
         data = pl.DataFrame(data)
         error_rows = data[error_index]
         return error_rows.select(
             ["query", "predicted_documents", "ground_truth_documents"]
-        ).sample(n=3) .to_dicts() # error example 3개씩만
+        ).sample(n=3).to_dicts() # error example 3개씩만
         
     async def create_report(self): 
         evaluate_result, dataset = self._load_eval_result()

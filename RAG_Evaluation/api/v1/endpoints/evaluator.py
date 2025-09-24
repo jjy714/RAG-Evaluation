@@ -35,33 +35,25 @@ async def evaluator(evaluation_request: EvaluationRequest):
     generator_evaluation_result = response.get("generator_evaluation_result")
     logger.info(f"RETRIEVAL RESULT: {retrieval_evaluation_result},\nGENERATOR RESULT: {generator_evaluation_result}")
 
-    # return JSONResponse(
-    #         content={"status": "OK", "evaluate_result": {"retrieval_evaluation_result": retrieval_evaluation_result, "generator_evaluation_result": generator_evaluation_result}},
-    #         status_code=200
-    #     )
     # Redis Save On ##
-    cache_input = {"retrieval_evaluation_result": retrieval_evaluation_result, "generator_evaluation_result": generator_evaluation_result}
     session_id = evaluation_request.session_id
     session_data = get_cache(session_id)
     session_data = json.loads(session_data)
-    session_data["eval_result"] = cache_input
+    session_data["eval_result"] = {"retrieval_evaluation_result": retrieval_evaluation_result, "generator_evaluation_result": generator_evaluation_result}
     set_cache(session_id, session_data)
+
+    # TODO: Mongo에 session_data 저장 기능 추가
+
+    return JSONResponse(
+            content={"status": "OK", "evaluate_result": session_data["eval_result"]},
+            status_code=200
+        )
     
     #### get again for locust test ### 
-    eval_result = get_cache(session_id)
-    eval_result = json.loads(eval_result)
-    eval_result = eval_result["eval_result"]
-    return JSONResponse(
-        content={"status": "OK", "evaluate_result": {"retrieval_evaluation_result": eval_result['retrieval_evaluation_result'], "generator_evaluation_result": eval_result['generator_evaluation_result']}},
-        status_code=200
-    )
-
-    #  retrieval_evaluation_result = {
-    # "mrr": {"mrr_score": mrr_score, "error_at_mrr_score": error_at_mrr_score},
-    # "map": {"map_score": map_score, "error_at_map_score": error_at_map_score},
-    # "f1": {"f1_score": f1_score, "error_at_f1_score": error_at_f1_score},
-    # "ndcg": {"ndcg_score": ndcg_score, "error_at_ndcg_score": error_at_ndcg_score},
-    # "context_relevance": {"context_relevance_score": context_relevance_score, "error_at_context_relevance_score": error_at_context_relevance_score},
-    # "precision": {"precision_score": precision_score, "error_at_precision_score": error_at_precision_score},
-    # "recall": {"recall_score": recall_score, "error_at_recall_score": error_at_recall_score},
-    # }
+    # eval_result = get_cache(session_id)
+    # eval_result = json.loads(eval_result)
+    # eval_result = eval_result["eval_result"]
+    # return JSONResponse(
+    #     content={"status": "OK", "evaluate_result": {"retrieval_evaluation_result": eval_result['retrieval_evaluation_result'], "generator_evaluation_result": eval_result['generator_evaluation_result']}},
+    #     status_code=200
+    # )
