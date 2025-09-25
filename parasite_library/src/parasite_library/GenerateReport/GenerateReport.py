@@ -3,6 +3,7 @@ import redis
 import json
 import asyncio
 import os
+import yaml
 from operator import itemgetter
 from pathlib import Path
 from typing import Any, List, Dict, Optional
@@ -10,7 +11,7 @@ from tqdm import tqdm
 import polars as pl
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException
 from dotenv import load_dotenv
 from collections import defaultdict
@@ -119,16 +120,26 @@ class GenerateReport:
 
     async def summarize_evaluation(self, prompt_name, **kwargs):
         script_dir = Path(__file__).parent.parent.resolve()
-        prompt = script_dir / "Prompts" / f"{prompt_name}.txt"
-        prompt = prompt.read_text(encoding="utf-8")
+        tmpl = script_dir / "Prompts" / f"{prompt_name}.yml"
+        with open(tmpl, "r", encoding="utf-8") as f:
+            tmpl = yaml.safe_load(f)
+        
         safe_kwargs = defaultdict(str, kwargs)
-        prompt = prompt.format_map(safe_kwargs)
-        print("## prompt: \n", prompt)
-        result = await self.llm_model.ainvoke(
-            [
-                SystemMessage(content=prompt),
+        if "all_summarized_result" in safe_kwargs:
+            messages = [
+                SystemMessage(content=tmpl["system"]),
+                HumanMessage(content=tmpl["fewshot_user"]),
+                AIMessage(content=tmpl["fewshot_assistant"]),
+                HumanMessage(content=tmpl["user_data"].format(**safe_kwargs)),
             ]
-        )
+        else:
+            messages = [
+                SystemMessage(content=tmpl["system"]),
+                HumanMessage(content=tmpl["user_data"].format(**safe_kwargs)),
+                HumanMessage(content=tmpl["user_instruction"])
+            ]
+
+        result = await self.llm_model.ainvoke(messages)
         result = result.content
         return result
 
@@ -151,6 +162,7 @@ class GenerateReport:
         for idx, (metric, score_dict) in enumerate(reports_dict.items()):
             output = FORMAT.format(idx=idx+1, metric_name=metric, metric_score=score_dict["score"], llm_analysis=score_dict["anaysis_text"])
             result += f"\n{output}"
+
         return result
    
 
@@ -158,7 +170,7 @@ class GenerateReport:
         final_report_dict = await self.create_individual_report(n=num_use_errorcase)
         all_summarized_result = self.merge_report(final_report_dict)
         eval_report = await self.summarize_evaluation(prompt_name="FINAL_REPORT_PROMPT", all_summarized_result=all_summarized_result)
-        return eval_report
+        return eval_report +  f"\n\n## 참고) 개별 성능 지표 분석\n{all_summarized_result}"
 
 
 
