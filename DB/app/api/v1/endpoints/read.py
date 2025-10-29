@@ -49,7 +49,7 @@ async def read(user_id: str, file_name: str):
         # 3. THE FIX: Return the actual data.
         #    FastAPI will automatically convert this list of dictionaries
         #    into a JSON array in the HTTP response.
-        return json_compatible_records
+        return {"status": "ok", "records": json_compatible_records}
 
     except Exception as e:
         print(f"ERROR during read_from_mongo: {traceback.format_exc()}")

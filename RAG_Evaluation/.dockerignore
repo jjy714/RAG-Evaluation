@@ -21,24 +21,20 @@ config.local.yaml
 
 # Test and benchmark files (not needed in production)
 test/
+stress_test_locusts/
 Benchmarks/
 
 # Notebooks and temporary scripts
 *.ipynb
+*.log
 curl_test.sh
 
 # Local results and data outputs that aren't needed at runtime
 results/
 data/outputs/
 data/results/
+.venv/
 
-
-test/
-data/
-Benchmarks/
-results/
-*.ipynb
-curl_test.sh
 
 .DS_Store
 

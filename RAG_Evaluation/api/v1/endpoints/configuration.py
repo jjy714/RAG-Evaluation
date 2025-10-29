@@ -14,18 +14,17 @@ router = APIRouter()
 
 @router.post("")
 def store_config(config: UserConfig):
-    
-    
+    print(f"RECIEVED CONFIG {config}")
     session_id = str(uuid.uuid4())
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     redis_handler = RedisSessionHandler(session_id=session_id)
     logger.addHandler(redis_handler)
-    
+
     logger.info(f"RECIEVED CONFIG {config}")
     logger.debug(f"Dumping to UserConfig {config}")
+
     json_config = UserConfig.model_dump(config)
-    
     logger.debug(f"Dumping as json {config}")
     json_config = json.dumps(json_config)
     

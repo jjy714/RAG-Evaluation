@@ -138,10 +138,3 @@ class GraphSchema(BaseModel):
     evaluation_mode: Literal["retrieval_only", "generation_only", "full"] = Field(
         ..., description="The evaluation mode to run."
     )
-
-
-# core/post_data
-class DataPoint(BaseModel):
-    session_id: str
-    endpoint: str
-    payload: Dict[str, Any]  

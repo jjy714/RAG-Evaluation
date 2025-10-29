@@ -1,3 +1,4 @@
+
 from langgraph.graph import StateGraph
 from typing_extensions import TypedDict, List, Dict, Optional
 from datasets import Dataset
@@ -7,8 +8,6 @@ from time import sleep
 from core import RedisSessionHandler
 import numpy as np
 import logging
-
-
 
             # query: List[str],
             # ground_truth_answer: List[List[Document]],
@@ -29,6 +28,9 @@ class GeneratorEvaluationState(TypedDict):
     generated_answer: List
     model: ChatOpenAI | AzureChatOpenAI | str
     
+    # --- API HANDLER --- 
+    session_id: str
+    
     evaluator: Optional[GenerationEvaluator]
 
     rouge_score: Optional[float]
@@ -44,7 +46,7 @@ def instantiate_evaluator_node(state: GeneratorEvaluationState) -> dict:
     """
     redis_handler = RedisSessionHandler(session_id=state["session_id"])
     logger.addHandler(redis_handler)
-    
+
     logger.info("\n--- (1) Instantiating Evaluator ---")
     evaluator = GenerationEvaluator(
         query=state["query"],
@@ -52,6 +54,7 @@ def instantiate_evaluator_node(state: GeneratorEvaluationState) -> dict:
         retrieved_contexts=state["retrieved_contexts"],
         generated_answer=state["generated_answer"],
         model=state["model"],
+        session_id = state["session_id"],
     )
     sleep(2)
     return {

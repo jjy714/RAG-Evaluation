@@ -8,16 +8,13 @@ from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from core import RedisSessionHandler
 import logging
 
-
 """
 @TODO 
-
 ADD A STEP BY STEP GRADUAL BATCHING ALGORITHM
-
 
 """
 
-    
+
 METRICS_LIST = ["mrr", "map", "f1", "ndcg", "context_relevance","precision", "recall" ]
 
 logger = logging.getLogger(__name__)
@@ -33,13 +30,13 @@ class RetrievalEvaluationState(TypedDict):
     metrics_to_run: List[str]
     model: AzureChatOpenAI | ChatOpenAI | str
     k: int
-    
+
     # --- API HANDLER --- 
     session_id: str
-    
+
     # --- INTERNAL STATE ---
     evaluator: Optional[RetrievalEvaluator]
-    
+
     # --- OUTPUT ---
     mrr_score: Optional[float]
     map_score: Optional[float]
@@ -52,12 +49,12 @@ class RetrievalEvaluationState(TypedDict):
     recall_macro: Optional[float]
     f1_micro: Optional[float]
     f1_macro: Optional[float]
-    
+
     error_at_mrr_score: Optional[List]
     error_at_map_score: Optional[List]
     error_at_ndcg_score: Optional[List]
     error_at_context_relevance_score: Optional[List]
-    
+
     error_at_precision_score: Optional[List]
     error_at_recall_score: Optional[List]
     error_at_f1_score: Optional[List]
@@ -71,13 +68,11 @@ def instantiate_evaluator_node(state: RetrievalEvaluationState) -> dict:
     This is the first step. It creates the evaluator instance ONCE and
     initializes the results dictionary and metrics list copy.
     """
-    
-
     redis_handler = RedisSessionHandler(session_id=state["session_id"])
     logger.addHandler(redis_handler)
-    
+
     logger.info("\n--- (1) Instantiating Evaluator ---")
-    
+
     evaluator = RetrievalEvaluator(
         query=state["query"],
         ground_truth_documents=state["ground_truth_documents"],
@@ -100,7 +95,7 @@ def mrr_node(state: RetrievalEvaluationState) -> dict:
     sleep(2)
     return {
         "mrr_score": mrr_score,
-        "error_at_mrr_score": error_at_mrr_score
+        "error_at_mrr_score": error_at_mrr_score,
         }
 
 def map_node(state: RetrievalEvaluationState) -> dict:

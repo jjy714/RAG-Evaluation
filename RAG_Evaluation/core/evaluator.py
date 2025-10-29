@@ -1,8 +1,8 @@
 from langchain_core.documents import Document
 from typing import Dict, List, Any
-from cache_redis import get_cache, set_cache
+from cache_redis import get_cache
 from fastapi import HTTPException
-from core import RedisSessionHandler
+from core.log_config import RedisSessionHandler
 import logging 
 import json 
 
@@ -25,8 +25,12 @@ def cleanse_data(data: List[Dict[str, Any]], max_retrieved_docs: int = 5) -> Dic
     ground_truth_documents_batch = []
     ground_truth_answers = []
     generated_answers = []
-
+    data = data['records']
     for row in data:
+
+        if isinstance(row, str):
+            row = json.loads(row)
+
         queries.append(row.get("question"))
         ground_truth_answers.append(row.get("target_answer"))
         generated_answers.append(row.get("response"))
@@ -86,14 +90,13 @@ def cleanse_data(data: List[Dict[str, Any]], max_retrieved_docs: int = 5) -> Dic
     
 def create_input_payload(request):
     session_id = request.session_id
-    
+
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     redis_handler = RedisSessionHandler(session_id=session_id)
     logger.addHandler(redis_handler)
-    
     logger.info("COMMENCING data transformation into evaluation graph payloads")
-    
+
     stored_session_json = get_cache(session_id)
     if not stored_session_json:
         logger.error("Session not found or has expired.")
@@ -109,10 +112,9 @@ def create_input_payload(request):
         raise ValueError("Configuration or benchmark_dataset is missing.")
     
     cleansed_data = cleanse_data(benchmark_dataset)
-    
     retrieval_dataset = None 
     generation_dataset = None
-    
+
     logger.info("Dataset type is 'RetrievalModel'. Populating retrieval payload.")
     retrieval_dataset = {
         "query": cleansed_data.get("query", []),
@@ -141,7 +143,5 @@ def create_input_payload(request):
         },
             "evaluation_mode": config.get("evaluation_mode", ""),
     }
-
     logger.info("Dataset Transformation Complete")
-    
     return final_payload
