@@ -48,12 +48,3 @@ async def evaluator(evaluation_request: EvaluationRequest):
             content={"status": "OK", "evaluate_result": session_data["eval_result"]},
             status_code=200
         )
-    
-    #### get again for locust test ### 
-    # eval_result = get_cache(session_id)
-    # eval_result = json.loads(eval_result)
-    # eval_result = eval_result["eval_result"]
-    # return JSONResponse(
-    #     content={"status": "OK", "evaluate_result": {"retrieval_evaluation_result": eval_result['retrieval_evaluation_result'], "generator_evaluation_result": eval_result['generator_evaluation_result']}},
-    #     status_code=200
-    # )

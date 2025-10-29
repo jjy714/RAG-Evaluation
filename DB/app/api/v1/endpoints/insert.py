@@ -11,7 +11,7 @@ router = APIRouter()
 async def insert(user_id: str, file: UploadFile = File(...)):
     executor = ThreadPoolExecutor(max_workers=10)
     
-    print(file)
+    # print(file)
     try:
         contents = await file.read()
         loop = asyncio.get_running_loop()

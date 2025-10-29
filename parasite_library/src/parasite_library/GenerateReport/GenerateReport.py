@@ -104,7 +104,9 @@ class GenerateReport:
         stored_session_json = self.r.get(self.session_id)
         session_data = json.loads(stored_session_json)
         evaluate_result = session_data["metric_result"]
-        dataset = session_data["benchmark_dataset"]
+        dataset = session_data["benchmark_data(set"]
+        # delete session_data for stress test
+        self.r.delete(self.session_id)
         return evaluate_result, dataset
         
     def _get_error_query_docs(self, data: Any, error_index: list[int], n: int):
@@ -186,7 +188,7 @@ async def generate_report(session_id, model="gpt-4o-mini", embedding_model="text
     #     base_url="http://localhost:8000/v1",
     # )
 
-    llm = ChatOpenAI(model=model, api_key=api_key, temperature=0)
+    b
     solver = GenerateReport(session_id=session_id, llm_model=llm, embedding_model=embeddings)
     eval_report = await solver.create_final_report(num_use_errorcase=num_use_errorcase)
     return eval_report
